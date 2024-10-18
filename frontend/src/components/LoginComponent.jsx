@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import { useNavigate } from 'react-router-dom';
+import { useAuthUser } from '../utils/hooks/useAuth'; // Adjust import based on structure
 
 const SignIn = () => {
   const [accountType, setAccountType] = useState('user');
@@ -13,10 +13,13 @@ const SignIn = () => {
     registrationNumber: '',
   });
 
-  const navigate = useNavigate(); // Initialize the navigate hook
+  const [formError, setFormError] = useState(null); // Track form validation errors
+  const navigate = useNavigate();
+  const { loginUser, loading, error, isAuthenticated } = useAuthUser();
 
   const handleAccountTypeChange = (type) => {
     setAccountType(type);
+    // Reset form data on account type switch
     setFormData({
       email: '',
       password: '',
@@ -25,6 +28,7 @@ const SignIn = () => {
       organizationName: '',
       registrationNumber: '',
     });
+    setFormError(null); // Clear form error on account switch
   };
 
   const handleChange = (e) => {
@@ -34,33 +38,28 @@ const SignIn = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { email, password, username, phoneNumber, organizationName, registrationNumber } = formData;
+    setFormError(null); // Reset form error
+
+    // Simple field validation
+    if (!formData.email || !formData.password) {
+      return setFormError('Email and password are required.');
+    }
 
     try {
-      const response = await axios.post(
-        accountType === 'user'
-          ? 'http://localhost:5000/api/users/register'
-          : 'http://localhost:5000/api/ngos/register',
-        {
-          email,
-          password,
-          ...(accountType === 'user' ? { username, phoneNumber } : { organizationName, registrationNumber }),
-        }
-      );
+      await loginUser(formData, accountType);
 
-      const { token } = response.data; // Assuming the response contains a token
-      localStorage.setItem('jwtToken', token); // Store the JWT in localStorage
-
-      navigate('/'); // Redirect to home page
-    } catch (error) {
-      console.error('Error signing in:', error); // Handle error (e.g., display message to user)
+      if (isAuthenticated) {
+        // Navigate based on account type
+        navigate(accountType === 'user' ? '/donation-applications' : '/all-applications');
+      }
+    } catch (err) {
+      console.error('Login failed:', err); // Error already handled in the hook
     }
   };
 
   return (
     <section className="bg-white dark:bg-gray-900">
       <div className="flex justify-center min-h-screen">
-        {/* Background image for larger screens */}
         <div
           className="hidden bg-cover lg:block lg:w-2/5"
           style={{
@@ -72,7 +71,6 @@ const SignIn = () => {
           }}
         ></div>
 
-        {/* Sign-in form container */}
         <div className="flex items-center w-full max-w-3xl p-8 mx-auto lg:px-12 lg:w-3/5">
           <div className="w-full">
             <h1 className="text-2xl font-semibold tracking-wider text-gray-800 capitalize dark:text-white">
@@ -88,25 +86,24 @@ const SignIn = () => {
               <div className="mt-3 md:flex md:items-center md:-mx-2">
                 <button
                   onClick={() => handleAccountTypeChange('user')}
-                  className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 focus:outline-none ${
+                  className={`flex justify-center w-full px-6 py-3 rounded-lg md:w-auto md:mx-2 ${
                     accountType === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  <span className="mx-2">User</span>
+                  User
                 </button>
 
                 <button
                   onClick={() => handleAccountTypeChange('ngo')}
-                  className={`flex justify-center w-full px-6 py-3 mt-4 rounded-lg md:mt-0 md:w-auto md:mx-2 focus:outline-none ${
+                  className={`flex justify-center w-full px-6 py-3 mt-4 rounded-lg md:mt-0 md:w-auto md:mx-2 ${
                     accountType === 'ngo' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  <span className="mx-2">NGO</span>
+                  NGO
                 </button>
               </div>
             </div>
 
-            {/* Sign-in form */}
             <form className="grid grid-cols-1 gap-6 mt-8 md:grid-cols-2" onSubmit={handleSubmit}>
               <div>
                 <label className="block mb-2 text-sm text-gray-600 dark:text-gray-200">Email address</label>
@@ -116,7 +113,7 @@ const SignIn = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="johnsnow@example.com"
-                  className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-lg dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                  className="block w-full px-5 py-3 mt-2 text-gray-700 bg-white border border-gray-200 rounded-lg"
                 />
               </div>
 
@@ -128,7 +125,7 @@ const SignIn = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-lg dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                  className="block w-full px-5 py-3 mt-2 text-gray-700 bg-white border border-gray-200 rounded-lg"
                 />
               </div>
 
@@ -142,7 +139,7 @@ const SignIn = () => {
                       value={formData.username}
                       onChange={handleChange}
                       placeholder="Enter your username"
-                      className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-lg dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                      className="block w-full px-5 py-3 mt-2 text-gray-700 bg-white border border-gray-200 rounded-lg"
                     />
                   </div>
 
@@ -154,7 +151,7 @@ const SignIn = () => {
                       value={formData.phoneNumber}
                       onChange={handleChange}
                       placeholder="Enter your phone number"
-                      className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-lg dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                      className="block w-full px-5 py-3 mt-2 text-gray-700 bg-white border border-gray-200 rounded-lg"
                     />
                   </div>
                 </>
@@ -169,8 +166,8 @@ const SignIn = () => {
                       name="organizationName"
                       value={formData.organizationName}
                       onChange={handleChange}
-                      placeholder="Enter your organization name"
-                      className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-lg dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                      placeholder="Enter organization name"
+                      className="block w-full px-5 py-3 mt-2 text-gray-700 bg-white border border-gray-200 rounded-lg"
                     />
                   </div>
 
@@ -181,8 +178,8 @@ const SignIn = () => {
                       name="registrationNumber"
                       value={formData.registrationNumber}
                       onChange={handleChange}
-                      placeholder="Enter your registration number"
-                      className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-lg dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                      placeholder="Enter registration number"
+                      className="block w-full px-5 py-3 mt-2 text-gray-700 bg-white border border-gray-200 rounded-lg"
                     />
                   </div>
                 </>
@@ -191,11 +188,14 @@ const SignIn = () => {
               <div className="md:col-span-2">
                 <button
                   type="submit"
-                  className="w-full px-6 py-3 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50"
+                  className="w-full px-6 py-3 text-white bg-blue-500 rounded-lg hover:bg-blue-400"
+                  disabled={loading}
                 >
-                  Sign Up
+                  {loading ? 'Signing In...' : 'Sign In'}
                 </button>
               </div>
+
+              {(formError || error) && <p className="text-red-500 text-center">{formError || error}</p>}
             </form>
           </div>
         </div>

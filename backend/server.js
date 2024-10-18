@@ -5,6 +5,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes.js'); // Import user routes
 const ngoRoutes = require('./routes/ngoRoutes.js'); // Import NGO routes
+const donationRoutes=require('./routes/foodDonationRoutes.js')
 
 dotenv.config(); // Load environment variables
 
@@ -21,6 +22,7 @@ connectDB();
 // Routes
 app.use('/api/users', userRoutes); // Add your user routes here
 app.use('/api/ngos', ngoRoutes); // Add your NGO routes here
+app.use("/api/donations",donationRoutes)
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
