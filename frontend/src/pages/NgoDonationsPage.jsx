@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+
+const VITE_API = import.meta.env.VITE_API_URL || "https://food-donation-7xzo.onrender.com";
+
+
 const NgoDonationsPage = () => {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +20,7 @@ const NgoDonationsPage = () => {
       }
 
       try {
-        const response = await axios.get("http://localhost:5000/api/donations/all-donations", {
+        const response = await axios.get(`${VITE_API}/api/donations/all-donations`, {
           headers: {
             Authorization: `Bearer ${token}`, // Attach token to headers for authentication
           },

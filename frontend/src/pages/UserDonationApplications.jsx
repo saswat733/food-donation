@@ -3,6 +3,10 @@ import axios from "axios";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
+
+const VITE_API = import.meta.env.VITE_API_URL || "https://food-donation-7xzo.onrender.com";
+
+
 const UserDonationApplication = () => {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +26,7 @@ const UserDonationApplication = () => {
       }
 
       try {
-        const response = await axios.get("http://localhost:5000/api/donations/donations", {
+        const response = await axios.get(`${VITE_API}/api/donations/donations`, {
           headers: {
             Authorization: `Bearer ${token}`, // Attach token in headers
           },

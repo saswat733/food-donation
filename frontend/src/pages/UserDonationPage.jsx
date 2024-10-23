@@ -3,6 +3,11 @@ import { useAuthUser } from '../utils/hooks/useAuth'; // Adjust the import based
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+
+const VITE_API = import.meta.env.VITE_API_URL || "https://food-donation-7xzo.onrender.com";
+
+
+
 const DonationPage = () => {
   const { user } = useAuthUser(); // Get the user info from the hook
   const [formData, setFormData] = useState({
@@ -38,7 +43,7 @@ const DonationPage = () => {
     try {
       const token = localStorage.getItem('authToken'); // Adjust this line based on how your token is stored
 
-      const response = await axios.post('http://localhost:5000/api/donations/donations', {
+      const response = await axios.post(`${VITE_API}/api/donations/donations`, {
         ...formData,
         donorId: user.id, // Assuming user has an ID you can use
       }, {
