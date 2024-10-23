@@ -4,6 +4,8 @@ import { loginFailure, loginRequest, loginSuccess } from "../slice/UserSlice";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const VITE_API= import.meta.env.VITE_API_URL;
+
 export const useAuthUser = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate(); // Added navigate for redirection after login/registration
@@ -25,7 +27,7 @@ export const useAuthUser = () => {
         accountType === "user" ? "/users/register" : "/ngos/register";
 
       const response = await axios.post(
-        `http://localhost:5000/api${endpoint}`,
+        `${VITE_API}/api${endpoint}`,
         formData
       );
 
@@ -58,7 +60,7 @@ export const useAuthUser = () => {
         accountType === "user" ? "/users/register" : "/ngos/register";
 
       const response = await axios.post(
-        `http://localhost:5000/api/${endpoint}`,
+        `${VITE_API}/api/${endpoint}`,
         formData
       );
 
