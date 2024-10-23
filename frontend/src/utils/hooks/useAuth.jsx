@@ -4,7 +4,7 @@ import { loginFailure, loginRequest, loginSuccess } from "../slice/UserSlice";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const VITE_API= import.meta.env.VITE_API_URL;
+const VITE_API = import.meta.env.VITE_API_URL || "https://food-donation-7xzo.onrender.com";
 
 export const useAuthUser = () => {
   const dispatch = useDispatch();
