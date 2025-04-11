@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthUser } from '../utils/hooks/useAuth'; // Adjust import based on structure
+import { toast } from 'react-toastify';
 
-const SignIn = () => {
+const Register = () => {
   const [accountType, setAccountType] = useState('user');
   const [formData, setFormData] = useState({
     email: '',
@@ -15,7 +16,7 @@ const SignIn = () => {
 
   const [formError, setFormError] = useState(null); // Track form validation errors
   const navigate = useNavigate();
-  const { loginUser, loading, error, isAuthenticated } = useAuthUser();
+  const { registerUser, loading, error, isAuthenticated } = useAuthUser();
 
   const handleAccountTypeChange = (type) => {
     setAccountType(type);
@@ -46,13 +47,14 @@ const SignIn = () => {
     }
 
     try {
-      await loginUser(formData, accountType);
-
+      await registerUser(formData, accountType);
+      toast.success("registration successful")
       if (isAuthenticated) {
         // Navigate based on account type
         navigate(accountType === 'user' ? '/donation-applications' : '/all-applications');
       }
     } catch (err) {
+      toast.error("registration failed")
       console.error('Login failed:', err); // Error already handled in the hook
     }
   };
@@ -191,7 +193,7 @@ const SignIn = () => {
                   className="w-full px-6 py-3 text-white bg-blue-500 rounded-lg hover:bg-blue-400"
                   disabled={loading}
                 >
-                  {loading ? 'Signing In...' : 'Sign In'}
+                  {loading ? 'Register...' : 'Register'}
                 </button>
               </div>
 
@@ -204,4 +206,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default Register;

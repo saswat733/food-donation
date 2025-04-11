@@ -136,7 +136,7 @@ const Hero = () => {
               </p>
 
               <button className="w-full border-2 px-5 py-2 mt-6 font-sans font-semibold text-sm tracking-wider text-white uppercase transition-colors duration-300 transform bg-blue-600 rounded-lg lg:w-auto hover:bg-blue-500 focus:outline-none focus:bg-blue-500">
-                <Link to={'/sign-in'}>
+                <Link to={'/register'}>
                 Donate Now
                 </Link>
               </button>

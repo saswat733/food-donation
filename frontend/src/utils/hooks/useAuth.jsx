@@ -60,7 +60,7 @@ export const useAuthUser = () => {
         accountType === "user" ? "/users/register" : "/ngos/register";
 
       const response = await axios.post(
-        `${VITE_API}/api/${endpoint}`,
+        `${VITE_API}/api${endpoint}`,
         formData
       );
 
