@@ -1,4 +1,4 @@
-const Donation = require('../models/foodDonationModels');
+const Donations = require('../models/foodDonationModels');
 
 // Create a new donation
 exports.createDonation = async (req, res) => {
@@ -7,7 +7,7 @@ exports.createDonation = async (req, res) => {
     const userId = req.user.id; // Assuming you've added user ID to req.user in authMiddleware
 
     // Create a new donation with user ID
-    const donation = new Donation({
+    const donation = new Donations({
       ...req.body,
       userId // Include userId in the donation object
     });
@@ -23,7 +23,7 @@ exports.createDonation = async (req, res) => {
 exports.getUserDonations = async (req, res) => {
   try {
     const userId = req.user.id; // Extract user ID from the token (authMiddleware)
-    const donations = await Donation.find({ userId }); // Filter by user ID
+    const donations = await Donations.find({ userId }); // Filter by user ID
 
     res.status(200).json(donations);
   } catch (error) {
@@ -33,7 +33,7 @@ exports.getUserDonations = async (req, res) => {
 
 exports.getAllDonations=async(req,res)=>{
   try {
-    const donations=await Donation.find();
+    const donations=await Donations.find();
 
     res.status(200).json(donations)
   } catch (error) {
@@ -44,7 +44,7 @@ exports.getAllDonations=async(req,res)=>{
 // Get a specific donation by ID
 exports.getDonationById = async (req, res) => {
   try {
-    const donation = await Donation.findById(req.params.id);
+    const donation = await Donations.findById(req.params.id);
     if (!donation) return res.status(404).json({ message: 'Donation not found' });
 
     res.status(200).json(donation);
@@ -56,7 +56,7 @@ exports.getDonationById = async (req, res) => {
 // Delete a donation
 exports.deleteDonation = async (req, res) => {
   try {
-    const donation = await Donation.findByIdAndDelete(req.params.id);
+    const donation = await Donations.findByIdAndDelete(req.params.id);
     if (!donation) return res.status(404).json({ message: 'Donation not found' });
 
     res.status(200).json({ message: 'Donation deleted successfully' });

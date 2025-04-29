@@ -1,50 +1,103 @@
 export default function Footer() {
   return (
-    <footer className="bg-white dark:bg-gray-900 w-full">
-      <div className="container flex flex-col items-center justify-between p-6 mx-auto space-y-4 sm:space-y-0 sm:flex-row">
-        <a
-          href="#"
-          className="text-gray-800 text-2xl font-bold transition-colors duration-300 transform dark:text-white hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          Feeders
-        </a>
+    <footer className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
+          {/* Brand Column */}
+          <div className="space-y-4">
+            <a href="#" className="flex items-center space-x-2">
+              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-green-500">
+                Feeders
+              </span>
+            </a>
+            <p className="text-gray-600 dark:text-gray-400 max-w-xs">
+              Connecting communities through food sharing and reducing waste one meal at a time.
+            </p>
+            <div className="flex space-x-4">
+              <a href="#" aria-label="Facebook" className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
+                </svg>
+              </a>
+              <a href="#" aria-label="Twitter" className="text-gray-500 hover:text-blue-400 dark:hover:text-blue-400 transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/>
+                </svg>
+              </a>
+              <a href="#" aria-label="Instagram" className="text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                </svg>
+              </a>
+              <a href="#" aria-label="GitHub" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                </svg>
+              </a>
+            </div>
+          </div>
 
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          © Copyright 2021. All Rights Reserved.
-        </p>
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Links</h3>
+            <ul className="space-y-2">
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Home</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">About Us</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">How It Works</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Donate Food</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Find Food</a></li>
+            </ul>
+          </div>
 
-        <div className="flex -mx-2">
-          {/* Facebook */}
-          <a
-            href="#"
-            className="mx-2 text-gray-600 transition-colors duration-300 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
-            aria-label="Facebook"
-          >
-            <svg
-              className="w-5 h-5 fill-current"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M2.00195 12.002C2.00312 16.9214 5.58036 21.1101 10.439 21.881V14.892H7.90195V12.002H10.442V9.80204C10.3284 8.75958 10.6845 7.72064 11.4136 6.96698C12.1427 6.21332 13.1693 5.82306 14.215 5.90204C14.9655 5.91417 15.7141 5.98101 16.455 6.10205V8.56104H15.191C14.7558 8.50405 14.3183 8.64777 14.0017 8.95171C13.6851 9.25566 13.5237 9.68693 13.563 10.124V12.002H16.334L15.891 14.893H13.563V21.881C18.8174 21.0506 22.502 16.2518 21.9475 10.9611C21.3929 5.67041 16.7932 1.73997 11.4808 2.01722C6.16831 2.29447 2.0028 6.68235 2.00195 12.002Z" />
-            </svg>
-          </a>
+          {/* Resources */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Resources</h3>
+            <ul className="space-y-2">
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Blog</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">FAQ</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Success Stories</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Partners</a></li>
+              <li><a href="#" className="text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Volunteer</a></li>
+            </ul>
+          </div>
 
-          {/* GitHub */}
-          <a
-            href="#"
-            className="mx-2 text-gray-600 transition-colors duration-300 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
-            aria-label="Github"
-          >
-            <svg
-              className="w-5 h-5 fill-current"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M12.026 2C7.13295 1.99937 2.96183 5.54799 2.17842 10.3779C1.395 15.2079 4.23061 19.893 8.87302 21.439C9.37302 21.529 9.55202 21.222 9.55202 20.958C9.55202 20.721 9.54402 20.093 9.54102 19.258C6.76602 19.858 6.18002 17.92 6.18002 17.92C5.99733 17.317 5.60459 16.7993 5.07302 16.461C4.17302 15.842 5.14202 15.856 5.14202 15.856C5.78269 15.9438 6.34657 16.3235 6.66902 16.884C6.94195 17.3803 7.40177 17.747 7.94632 17.9026C8.49087 18.0583 9.07503 17.99 9.56902 17.713C9.61544 17.207 9.84055 16.7341 10.204 16.379C7.99002 16.128 5.66202 15.272 5.66202 11.449C5.64973 10.4602 6.01691 9.5043 6.68802 8.778C6.38437 7.91731 6.42013 6.97325 6.78802 6.138C6.78802 6.138 7.62502 5.869 9.53002 7.159C11.1639 6.71101 12.8882 6.71101 14.522 7.159C16.428 5.868 17.264 6.138 17.264 6.138C17.6336 6.97286 17.6694 7.91757 17.364 8.778C18.0376 9.50423 18.4045 10.4626 18.388 11.453C18.388 15.286 16.058 16.128 13.836 16.375C14.3153 16.8651 14.5612 17.5373 14.511 18.221C14.511 19.555 14.499 20.631 14.499 20.958C14.499 21.225 14.677 21.535 15.186 21.437C19.8265 19.8884 22.6591 15.203 21.874 10.3743C21.089 5.54565 16.9181 1.99888 12.026 2Z" />
-            </svg>
-          </a>
+          {/* Contact */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contact Us</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start space-x-3">
+                <svg className="w-5 h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span className="text-gray-600 dark:text-gray-400">hello@feeders.org</span>
+              </li>
+              <li className="flex items-start space-x-3">
+                <svg className="w-5 h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+                <span className="text-gray-600 dark:text-gray-400">+1 (555) 123-4567</span>
+              </li>
+              <li className="flex items-start space-x-3">
+                <svg className="w-5 h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span className="text-gray-600 dark:text-gray-400">123 Food Share St, San Francisco, CA 94107</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700 flex flex-col items-center md:flex-row md:justify-between">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            © {new Date().getFullYear()} Feeders. All rights reserved.
+          </p>
+          <div className="flex space-x-6 mt-4 md:mt-0">
+            <a href="#" className="text-sm text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Privacy Policy</a>
+            <a href="#" className="text-sm text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Terms of Service</a>
+            <a href="#" className="text-sm text-gray-600 hover:text-blue-600 dark:hover:text-blue-400 dark:text-gray-400 transition-colors">Cookies</a>
+          </div>
         </div>
       </div>
     </footer>

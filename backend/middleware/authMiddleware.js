@@ -1,31 +1,52 @@
-const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
+const jwt = require("jsonwebtoken");
+const AppError = require("../utils/appError");
+const { User } = require("../models/userModels");
+// const User = require("../models/userModels/User"); // Base user model
 
-dotenv.config(); // Load environment variables
-
-// Middleware to check if the user is authenticated
-const authMiddleware = (req, res, next) => {
+exports.protect = async (req, res, next) => {
   try {
-    // Get token from headers (expects "Bearer <token>")
-    const authHeader = req.header('Authorization');
-    if (!authHeader) {
-      return res.status(401).json({ message: 'Authorization header missing' });
+    // 1) Get token from headers
+    let token;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
     }
 
-    const token = authHeader.split(' ')[1];
     if (!token) {
-      return res.status(401).json({ message: 'No token, authorization denied' });
+      return next(
+        new AppError("You are not logged in! Please log in to get access.", 401)
+      );
     }
 
-    // Verify the token
+    // 2) Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Attach user info (e.g., user ID) to the request
 
-    next(); // Proceed to the next middleware or route handler
+    // 3) Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return next(
+        new AppError("The user belonging to this token no longer exists.", 401)
+      );
+    }
+
+    // 4) Grant access to protected route
+    req.user = currentUser;
+    next();
   } catch (err) {
-    console.error('JWT verification failed:', err.message); // Optional: Log the error for debugging
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    next(err);
   }
 };
 
-module.exports = authMiddleware;
+// Optional: Role-based access control
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError("You do not have permission to perform this action", 403)
+      );
+    }
+    next();
+  };
+};

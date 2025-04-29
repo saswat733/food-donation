@@ -1,41 +1,54 @@
-// server.js or index.js
-const express = require('express');
-const connectDB = require('./config/db'); // Adjust the path if needed
-const cors = require('cors');
-const dotenv = require('dotenv');
-const userRoutes = require('./routes/userRoutes.js'); // Import user routes
-const ngoRoutes = require('./routes/ngoRoutes.js'); // Import NGO routes
-const donationRoutes=require('./routes/foodDonationRoutes.js')
-const contactRoutes=require("./routes/contactRoutes.js")
-const volunteerRoutes = require("./routes/VolunteerRoutes.js");
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const cors = require("cors"); // Add this line
+const authRoutes = require("./routes/authRoutes");
+const AppError = require("./utils/appError");
+const globalErrorHandler = require("./controllers/errorController");
+const connectDB = require("./config/db");
+const individualRoutes = require("./routes/IndividualRoutes");
+const orgRoutes = require("./routes/orgRoutes");
 
-dotenv.config(); // Load environment variables
+dotenv.config({ path: "./config.env" });
+
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
+// 1. Enable CORS - Add this before other middleware
 app.use(
   cors({
-    origin: '*',  // Remove trailing slash
-    credentials: true, // Allow cookies to be sent
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Restrict allowed methods
-    allowedHeaders: ['Content-Type', 'Authorization'],  // Specify allowed headers
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Your frontend URL
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.use(express.json());
+// Optional: For preflight requests
+app.options("*", cors()); // Enable preflight for all routes
 
-// Connect to the database
+// Body parser
+app.use(express.json({ limit: "10kb" }));
+
+// Database connection
 connectDB();
 
-// Routes
-app.use('/api/users', userRoutes); // Add your user routes here
-app.use('/api/ngos', ngoRoutes); // Add your NGO routes here
-app.use("/api/donations",donationRoutes)
-app.use("/api/contact", contactRoutes); // Add your contact routes here
-app.use("/api/volunteer", volunteerRoutes);
+// Test route
+app.get("/success", (req, res) => {
+  console.log("Welcome to the API");
+  res.send("Welcome to the API");
+});
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Routes
+app.use("/api/v1/auth", authRoutes);
+app.use('/api/v1/individual',individualRoutes);
+app.use("/api/v1/org", orgRoutes);
+
+
+// Error handling
+app.use(globalErrorHandler);
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`App running on port ${port}...`);
 });

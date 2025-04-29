@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@headlessui/react": "^2.2.2",
+    "react-bootstrap": "^2.10.9"
+  }
+}

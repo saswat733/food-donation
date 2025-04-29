@@ -9,150 +9,88 @@ const Hero = () => {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900">
-      <nav className="relative bg-white dark:bg-gray-900">
-        <div className="container px-6 py-4 mx-auto md:flex md:justify-between md:items-center">
-          <div className="flex items-center justify-between">
-            <a href="#">
-              <img
-                className="w-auto h-6 sm:h-7"
-                src="https://example.com/food-donation-logo.svg"  // Updated logo
-                alt="Food Donation Logo"
-              />
-            </a>
-
-            {/* Mobile menu button */}
-            <div className="flex md:hidden">
-              <button
-                onClick={toggleMenu}
-                type="button"
-                className="text-gray-500 dark:text-gray-200 hover:text-gray-600 dark:hover:text-gray-400 focus:outline-none focus:text-gray-600 dark:focus:text-gray-400"
-                aria-label="toggle menu"
-              >
-                {!isOpen ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          <div
-            className={`absolute inset-x-0 z-20 w-full px-6 py-4 transition-all duration-300 ease-in-out bg-white dark:bg-gray-900 md:bg-transparent md:dark:bg-transparent md:mt-0 md:p-0 md:top-0 md:relative md:w-auto md:flex md:items-center ${
-              isOpen ? "translate-x-0 opacity-100" : "opacity-0 -translate-x-full"
-            }`}
-          >
-            <div className="flex flex-col md:flex-row md:mx-6">
-              <a
-                className="my-2 text-gray-700 transition-colors duration-300 transform dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 md:mx-4 md:my-0"
-                href="#"
-              >
-                Home
-              </a>
-              <a
-                className="my-2 text-gray-700 transition-colors duration-300 transform dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 md:mx-4 md:my-0"
-                href="#"
-              >
-                Donate
-              </a>
-              <a
-                className="my-2 text-gray-700 transition-colors duration-300 transform dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 md:mx-4 md:my-0"
-                href="#"
-              >
-                How It Works
-              </a>
-              <a
-                className="my-2 text-gray-700 transition-colors duration-300 transform dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 md:mx-4 md:my-0"
-                href="#"
-              >
-                About Us
-              </a>
-              <a
-                className="my-2 text-gray-700 transition-colors duration-300 transform dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 md:mx-4 md:my-0"
-                href="#"
-              >
-                Contact
-              </a>
-            </div>
-
-            <div className="flex justify-center md:block">
-              <a
-                className="relative text-gray-700 transition-colors duration-300 transform dark:text-gray-200 hover:text-gray-600 dark:hover:text-gray-300"
-                href="#"
-              >
-                <svg
-                  className="w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.707 15.293C4.077 15.923 4.523 17 5.414 17H17M17 17C15.895 17 15 17.895 15 19C15 20.105 15.895 21 17 21C18.105 21 19 20.105 19 19C19 17.895 18.105 17 17 17ZM9 19C9 20.105 8.105 21 7 21C5.895 21 5 20.105 5 19C5 17.895 5.895 17 7 17C8.105 17 9 17.895 9 19Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-
-                <span className="absolute top-0 left-0 p-1 text-xs text-white bg-blue-500 rounded-full"></span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="container px-6 py-16 mx-auto">
-        <div className="items-center lg:flex">
-          <div className="w-full lg:w-1/2">
-            <div className="lg:max-w-lg">
-              <h1 className="text-3xl font-semibold text-gray-800 dark:text-white lg:text-4xl">
-                Help fight hunger <br /> by donating <span className="text-blue-500">food</span>
+    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="max-w-7xl mx-auto px-6 py-12 md:py-20">
+        <div className="flex flex-col md:flex-row items-center">
+          <div className="w-full md:w-1/2 mb-12 md:mb-0">
+            <div className="max-w-lg">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
+                Help{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
+                  Fight Hunger
+                </span>{" "}
+                By Donating Food
               </h1>
 
-              <p className="mt-3 text-gray-600 dark:text-gray-400">
-                Millions of people go to bed hungry every day. Your donation can help feed those in
-                need. Join us in our mission to eliminate hunger and provide food for everyone.
+              <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                Every day, good food goes to waste while people go hungry. Our
+                platform connects food donors with local charities to bridge
+                this gap. Your donation can help feed hundreds in your
+                community.
               </p>
 
-              <button className="w-full border-2 px-5 py-2 mt-6 font-sans font-semibold text-sm tracking-wider text-white uppercase transition-colors duration-300 transform bg-blue-600 rounded-lg lg:w-auto hover:bg-blue-500 focus:outline-none focus:bg-blue-500">
-                <Link to={'/register'}>
-                Donate Now
+              <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <Link
+                  to="/register"
+                  className="px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-green-500 text-white font-semibold text-center hover:shadow-xl transition-all"
+                >
+                  Start Donating
                 </Link>
-              </button>
+                <Link
+                  to="/how-it-works"
+                  className="px-8 py-4 rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                >
+                  Learn How It Works
+                </Link>
+              </div>
+
+              <div className="mt-8 flex items-center space-x-4">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map((item) => (
+                    <img
+                      key={item}
+                      src={`https://randomuser.me/api/portraits/women/${
+                        item + 40
+                      }.jpg`}
+                      className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800"
+                      alt="Donor"
+                    />
+                  ))}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <p>
+                    Joined by <span className="font-semibold">1,200+</span>{" "}
+                    donors
+                  </p>
+                  <p className="text-xs">Saving food daily</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center w-full mt-6 lg:mt-0 lg:w-1/2">
-            <img
-              className="w-full h-full lg:max-w-3xl"
-              src="../../src/assets/home.png"  // Updated hero image
-              alt="Donate Food"
-            />
+          <div className="w-full md:w-1/2">
+            <div className="relative">
+              <div className="absolute -top-6 -left-6 w-64 h-64 bg-blue-100 dark:bg-blue-900 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+              <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-green-100 dark:bg-green-900 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+              <div className="absolute top-20 -right-10 w-64 h-64 bg-yellow-100 dark:bg-yellow-900 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+              <div className="relative rounded-2xl bg-white dark:bg-gray-800 shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                <img
+                  className="w-full h-auto"
+                  src="../../src/assets/home.png"
+                  alt="Volunteers packing food donations"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                  <p className="text-white font-medium">
+                    Real-time donations being matched with local food banks
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </header>
+    </div>
   );
 };
 

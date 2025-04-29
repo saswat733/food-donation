@@ -1,35 +1,40 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-
-const VITE_API = import.meta.env.VITE_API_URL;
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-    const [success, setsuccess] = useState(false)
-    const navigate=useNavigate();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
     try {
-      const res = await axios.post(`${VITE_API}/api/users/signin`, formData);
-      toast.success("login successfull")
-      setsuccess(true)
-
-      console.log(res.data); // token, user, etc.
+      await login(formData.email, formData.password);
+      toast.success("Login successful");
+      navigate("/dashboard"); // Redirect to dashboard after successful login
     } catch (err) {
-
-     toast.error("login failed")
-    }finally{
-        return navigate("/")
+      const errorMessage =
+        err.response?.data?.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-  }
-
-
+  };
 
   return (
     <section className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-blue-50 to-blue-200 px-4">
@@ -63,19 +68,28 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
               required
+              minLength={6}
               className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition duration-300"
+            disabled={isLoading}
+            className={`w-full text-white py-3 rounded-xl transition duration-300 ${
+              isLoading
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Log In
+            {isLoading ? "Logging in..." : "Log In"}
           </button>
         </form>
         <p className="text-center text-gray-500 mt-6">
-          Don’t have an account?{" "}
-          <a href="/register" className="text-blue-600 hover:underline">
+          Don't have an account?{" "}
+          <a
+            href="/register"
+            className="text-blue-600 hover:underline font-medium"
+          >
             Register
           </a>
         </p>
