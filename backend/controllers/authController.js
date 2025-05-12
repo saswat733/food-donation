@@ -1,6 +1,6 @@
 // controllers/authController.js
 const { User, Individual, Organization, Restaurant } = require('../models/userModels');
-const AppError = require('../utils/appError');
+const AppError = require('../utils/AppError.js');
 const jwt = require('jsonwebtoken');
 
 // Utility function to generate token

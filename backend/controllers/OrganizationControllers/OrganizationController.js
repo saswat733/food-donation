@@ -6,7 +6,7 @@ const Request = require("../../models/organizationModels/Request");
 const Event = require("../../models/organizationModels/Event");
 const { Organization } = require("../../models/userModels");
 const calculateStats = require("../../utils/statsCalculator");
-const AppError = require("../../utils/appError");
+const AppError = require("../../utils/AppError.js");
 
 // @desc    Get all donations for organization
 // @route   GET /api/v1/org/donations

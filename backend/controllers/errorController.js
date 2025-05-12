@@ -1,5 +1,5 @@
 // controllers/errorController.js
-const AppError = require('../utils/AppError');
+const AppError = require('../utils/AppError.js');
 
 const handleCastErrorDB = (err) => {
   const message = `Invalid ${err.path}: ${err.value}`;

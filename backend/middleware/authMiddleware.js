@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const AppError = require("../utils/appError");
+const AppError = require("../utils/AppError.js");
 const { User } = require("../models/userModels");
 // const User = require("../models/userModels/User"); // Base user model
 

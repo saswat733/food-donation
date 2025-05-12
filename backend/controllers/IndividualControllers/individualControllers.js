@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const VolunteerApplication = require("../../models/individualModels/VolunteerApplication");
 const ServiceOffer = require("../../models/individualModels/ServiceOffer");
 const Donation = require("../../models/individualModels/Donation");
-const AppError = require("../../utils/appError");
+const AppError = require("../../utils/AppError.js");
 
 exports.getDashboardStats = async (req, res, next) => {
   try {

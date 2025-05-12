@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const AppError = require("../utils/appError");
+const AppError = require("../utils/AppError.js");
 
 exports.validateRegistration = [
   body("email").isEmail().withMessage("Please provide a valid email"),
