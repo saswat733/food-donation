@@ -77,7 +77,7 @@ const Hero = () => {
               <div className="relative rounded-2xl bg-white dark:bg-gray-800 shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
                 <img
                   className="w-full h-auto"
-                  src="../../src/assets/home.png"
+                  src="/home.png"
                   alt="Volunteers packing food donations"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">

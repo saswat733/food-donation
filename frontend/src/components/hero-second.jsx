@@ -157,7 +157,7 @@ const FoodDonationSection = () => {
               <div className="relative rounded-2xl overflow-hidden border border-gray-700/50 shadow-2xl">
                 <img
                   className="w-full h-auto object-cover"
-                  src="../../src/assets/home2.png"
+                  src="/home2.png"
                   alt="Volunteers distributing food"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>

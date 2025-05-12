@@ -1,8 +1,4 @@
-// const VolunteerApplication = require("../models/VolunteerApplication");
-// const ServiceOffer = require("../models/ServiceOffer");
-// const Donation = require("../models/Donation");
 const Organization = require("../../models/userModels").Organization;
-// const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
 const VolunteerApplication = require("../../models/individualModels/VolunteerApplication");
 const ServiceOffer = require("../../models/individualModels/ServiceOffer");
@@ -13,15 +9,11 @@ exports.getDashboardStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const totalDonations = await Donation.aggregate([
-      {
-        $match: {
-          recipient: mongoose.Types.ObjectId(userId),
-          status: "completed",
-        },
-      },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]);
+    // Get total food donations (count instead of sum)
+    const totalDonations = await Donation.countDocuments({
+      recipient: mongoose.Types.ObjectId(userId),
+      status: "delivered",
+    });
 
     const activeVolunteers = await VolunteerApplication.countDocuments({
       user: userId,
@@ -38,7 +30,7 @@ exports.getDashboardStats = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       data: {
-        totalDonations: totalDonations.length > 0 ? totalDonations[0].total : 0,
+        totalDonations,
         activeVolunteers,
         serviceRequests,
         upcomingEvents,
@@ -67,23 +59,17 @@ exports.getOrganizations = async (req, res, next) => {
 
 exports.submitVolunteerApplication = async (req, res, next) => {
   try {
-
     const { organization, skills, availability, motivation } = req.body;
-    console.log("hello")
-    console.log(organization)
-    // Validate input
+
     if (!organization || !skills || !availability || !motivation) {
       return next(new AppError("All fields are required", 400));
     }
-    // Check if organization exists
+
     const orgExists = await Organization.findById(organization);
     if (!orgExists) {
-        console.log("mil gya")
-        return next(new AppError("Organization not found", 404));
+      return next(new AppError("Organization not found", 404));
     }
-    console.log("hello1")
 
-    // Check if user already applied
     const existingApplication = await VolunteerApplication.findOne({
       user: req.user.id,
       organization,
@@ -94,7 +80,6 @@ exports.submitVolunteerApplication = async (req, res, next) => {
         new AppError("You have already applied to this organization", 400)
       );
     }
-    console.log("heelo")
 
     const newApplication = await VolunteerApplication.create({
       user: req.user.id,
@@ -146,26 +131,53 @@ exports.submitServiceOffer = async (req, res, next) => {
 
 exports.requestDonation = async (req, res, next) => {
   try {
-    const { donor, amount, purpose, message } = req.body;
+    const {
+      donor,
+      foodType,
+      foodDescription,
+      quantity,
+      unit,
+      storageRequirements,
+      preferredDeliveryDate,
+      purpose,
+      specialInstructions,
+      deliveryAddress,
+    } = req.body;
 
-    if (!donor || !amount || !purpose) {
-      return next(new AppError("Donor, amount and purpose are required", 400));
+    if (
+      !donor ||
+      !foodType ||
+      !foodDescription ||
+      !quantity ||
+      !unit ||
+      !storageRequirements ||
+      !preferredDeliveryDate ||
+      !purpose
+    ) {
+      return next(new AppError("Required fields are missing", 400));
     }
-    console.log("donor", donor)
+
     // Check if donor exists
     const donorExists = await mongoose.model("User").findById(donor);
     if (!donorExists) {
       return next(new AppError("Donor not found", 404));
     }
 
-    console.log(donorExists)
-
     const newDonation = await Donation.create({
       donor,
       recipient: req.user.id,
-      amount,
+      foodType,
+      foodDescription,
+      quantity: {
+        value: quantity,
+        unit,
+      },
+      storageRequirements,
+      preferredDeliveryDate,
       purpose,
-      message: message || "",
+      specialInstructions: specialInstructions || "",
+      deliveryAddress: deliveryAddress || null,
+      status: "pending",
     });
 
     res.status(201).json({
@@ -175,60 +187,33 @@ exports.requestDonation = async (req, res, next) => {
       },
     });
   } catch (err) {
-    next(new AppError("Failed to request donation", 500));
+    next(new AppError("Failed to request food donation", 500));
   }
 };
 
 exports.getDonations = async (req, res, next) => {
   try {
-    // console.log("Fetching donations for user:", req.user.id); // Debug log
-
-    // First try without any filters to verify data exists
-    const allDonations = await Donation.find({})
+    const userDonations = await Donation.find({ recipient: req.user.id })
       .populate("donor", "name email")
       .populate("recipient", "name email")
-      .sort({ donationDate: -1 });
-
-    // console.log("All donations in DB:", allDonations); // Debug log
-
-    // Then try with recipient filter
-    const userDonations = await Donation.find({ recipient: req.user.id })
-      .populate("donor", "email")
-      .sort({ donationDate: -1 });
-
-    // console.log("Filtered donations:", userDonations); // Debug log
-
-    // Check if recipient IDs match
-    const mismatchedRecipients = allDonations.filter(
-      (d) =>
-        d.recipient && d.recipient._id.toString() !== req.user.id.toString()
-    );
-    // console.log("Donations with different recipients:", mismatchedRecipients);
+      .sort({ requestDate: -1 });
 
     res.status(200).json({
       status: "success",
       results: userDonations.length,
       data: {
         donations: userDonations,
-        debug: {
-          // Additional debug info
-          allDonationsCount: allDonations.length,
-          userDonationsCount: userDonations.length,
-          userId: req.user.id,
-          userIdType: typeof req.user.id,
-        },
       },
     });
   } catch (err) {
-    // console.error("Error in getDonations:", err);
-    next(new AppError("Failed to get donations", 500));
+    next(new AppError("Failed to get food donations", 500));
   }
 };
 
 exports.getDonationRequests = async (req, res, next) => {
   try {
     const donationRequests = await Donation.find({
-      requester: req.user.id, // Assuming you have a requester field
+      recipient: req.user.id,
     })
       .populate("donor", "name email")
       .sort({ createdAt: -1 });
@@ -249,6 +234,7 @@ exports.getDonors = async (req, res, next) => {
   try {
     // Get users who have donated before
     const donors = await Donation.aggregate([
+      { $match: { status: "delivered" } },
       { $group: { _id: "$donor" } },
       {
         $lookup: {
@@ -264,7 +250,9 @@ exports.getDonors = async (req, res, next) => {
           _id: "$user._id",
           name: "$user.name",
           email: "$user.email",
-          lastDonation: "$amount",
+          lastDonation: "$quantity.value",
+          lastDonationUnit: "$quantity.unit",
+          lastDonationType: "$foodType",
         },
       },
     ]);
@@ -278,5 +266,48 @@ exports.getDonors = async (req, res, next) => {
     });
   } catch (err) {
     next(new AppError("Failed to get donors", 500));
+  }
+};
+
+// Additional function to update donation status
+exports.updateDonationStatus = async (req, res, next) => {
+  try {
+    const { donationId } = req.params;
+    const { status } = req.body;
+
+    if (
+      !["pending", "approved", "scheduled", "delivered", "cancelled"].includes(
+        status
+      )
+    ) {
+      return next(new AppError("Invalid status", 400));
+    }
+
+    const updateData = { status };
+
+    if (status === "scheduled") {
+      updateData.scheduledDeliveryDate = req.body.scheduledDeliveryDate;
+    } else if (status === "delivered") {
+      updateData.actualDeliveryDate = new Date();
+    }
+
+    const updatedDonation = await Donation.findByIdAndUpdate(
+      donationId,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedDonation) {
+      return next(new AppError("Donation not found", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        donation: updatedDonation,
+      },
+    });
+  } catch (err) {
+    next(new AppError("Failed to update donation status", 500));
   }
 };
