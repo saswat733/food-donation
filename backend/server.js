@@ -11,7 +11,6 @@ const orgRoutes = require("./routes/orgRoutes");
 
 dotenv.config({ path: "./config.env" });
 
-
 const app = express();
 
 // 1. Enable CORS - Add this before other middleware
@@ -41,9 +40,8 @@ app.get("/success", (req, res) => {
 
 // Routes
 app.use("/api/v1/auth", authRoutes);
-app.use('/api/v1/individual',individualRoutes);
+app.use("/api/v1/individual", individualRoutes);
 app.use("/api/v1/org", orgRoutes);
-
 
 // Error handling
 app.use(globalErrorHandler);
