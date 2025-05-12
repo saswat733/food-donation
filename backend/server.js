@@ -17,7 +17,7 @@ const app = express();
 // 1. Enable CORS - Add this before other middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Your frontend URL
+    origin: "*", // Your frontend URL
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
