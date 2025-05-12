@@ -17,7 +17,7 @@ const app = express();
 // 1. Enable CORS - Add this before other middleware
 app.use(
   cors({
-    origin: "*", // Your frontend URL
+    origin: "https://food-donation-gamma.vercel.app", // ✅ Your frontend domain
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
