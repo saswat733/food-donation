@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/v1/individual"; // Update with your backend URL
+const API_URL = import.meta.env.REACT_APP_API_BASE_URL + "/individual"|| "http://localhost:3000/api/v1/individual"; // Update with your backend URL
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");

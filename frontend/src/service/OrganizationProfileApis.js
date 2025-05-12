@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_URL =
-  import.meta.env.REACT_APP_API_BASE_URL  + "/organization/profile";
+  import.meta.env.REACT_APP_API_BASE_URL + "/organization/profile";
 
 
 const getAuthHeader = () => {
