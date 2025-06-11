@@ -10,40 +10,40 @@ const donationSchema = new mongoose.Schema(
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // required: true,
     },
     foodType: {
       type: String,
       enum: ["perishable", "non-perishable", "prepared", "other"],
-      required: true,
+      // required: true,
     },
     foodDescription: {
       type: String,
-      required: true,
+      // required: true,
     },
     quantity: {
       value: {
         type: Number,
-        required: true,
+        // required: true,
       },
       unit: {
         type: String,
         enum: ["kg", "lbs", "units", "meals"],
-        required: true,
+        // required: true,
       },
     },
     storageRequirements: {
       type: String,
       enum: ["refrigerated", "frozen", "shelf-stable", "none"],
-      required: true,
+      // required: true,
     },
     preferredDeliveryDate: {
       type: Date,
-      required: true,
+      // required: true,
     },
     purpose: {
       type: String,
-      required: true,
+      // required: true,
     },
     message: String,
     status: {

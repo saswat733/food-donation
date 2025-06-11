@@ -23,13 +23,17 @@ export default function UserDashboard() {
   });
 
   const [donationRequest, setDonationRequest] = useState({
-  foodType: "",
-  quantity: "",
-  unit: "",
-  preferredDate: "",
-  storageRequirements: "",
-  purpose: "",
-});
+    donor: "",
+    foodType: "",
+    foodDescription: "",
+    quantity: "",
+    unit: "kg", // default unit
+    storageRequirements: "",
+    preferredDeliveryDate: "",
+    purpose: "",
+    specialInstructions: "",
+    deliveryAddress: "",
+  });
 
 
   // Form states
@@ -167,7 +171,6 @@ export default function UserDashboard() {
         setDonations(donationsRes.data.data.donations);
         setDonors(donorsRes.data.data.donors);
         setDonationReq(requestsRes.data.data.requests);
-        console.log("donationReq:", requestsRes);
         // console.log("donations:",donationsRes)
         setOrganizations(
           orgsRes.data.data.organizations.map((org) => ({
@@ -233,26 +236,36 @@ export default function UserDashboard() {
       // Handle error
     }
   };
-const handleDonationRequestSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await dashboardService.requestFoodDonation({
-      foodType: donationRequest.foodType,
-      quantity: donationRequest.quantity,
-      unit: donationRequest.unit,
-      preferredDate: donationRequest.preferredDate,
-      storageRequirements: donationRequest.storageRequirements,
-      purpose: donationRequest.purpose,
-    });
-    console.log("Food donation request submitted:", response);
-    toast.success("Food donation request submitted");
-    setShowDonationRequestModal(false);
-  } catch (err) {
-    console.error("Error submitting food donation request:", err);
-    toast.error("Failed to submit food donation request");
-  }
-};
+  const handleDonationRequestSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await dashboardService.requestFoodDonation({
+        donor: donationRequest.donor,
+        foodType: donationRequest.foodType,
+        foodDescription: donationRequest.foodDescription,
+        quantity: {
+          value: donationRequest.quantity,
+          unit: donationRequest.unit,
+        },
+        storageRequirements: donationRequest.storageRequirements,
+        preferredDeliveryDate: donationRequest.preferredDeliveryDate,
+        purpose: donationRequest.purpose,
+        specialInstructions: donationRequest.specialInstructions || undefined,
+        deliveryAddress: donationRequest.deliveryAddress || undefined,
+      });
 
+      toast.success("Food donation request submitted successfully!");
+      setShowDonationRequestModal(false);
+      // Refresh data if needed
+      fetchDashboardData();
+    } catch (err) {
+      console.error("Error submitting food donation request:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to submit food donation request"
+      );
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar and Main Content Layout */}
@@ -1100,6 +1113,7 @@ const handleDonationRequestSubmit = async (e) => {
       )}
 
       {/* Donation Request Modal */}
+      {/* Donation Request Modal */}
       {showDonationRequestModal && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -1123,14 +1137,45 @@ const handleDonationRequestSubmit = async (e) => {
                       Request Food Donation
                     </h3>
                     <form onSubmit={handleDonationRequestSubmit}>
+                      {/* Donor Selection */}
+                      <div className="mb-4">
+                        <label
+                          htmlFor="donor"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Donor (Organization)
+                        </label>
+                        <select
+                          id="donor"
+                          value={donationRequest.donor}
+                          onChange={(e) =>
+                            setDonationRequest({
+                              ...donationRequest,
+                              donor: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          required
+                        >
+                          <option value="">Select donor organization</option>
+                          {organizations.map((org) => (
+                            <option key={org.id} value={org.id}>
+                              {org.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Food Type */}
                       <div className="mb-4">
                         <label
                           htmlFor="foodType"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Type of Food Needed
+                          Type of Food
                         </label>
-                        <select
+                        <input
+                          type="text"
                           id="foodType"
                           value={donationRequest.foodType}
                           onChange={(e) =>
@@ -1140,32 +1185,49 @@ const handleDonationRequestSubmit = async (e) => {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="e.g., Rice, Pasta, Fresh Vegetables"
                           required
-                        >
-                          <option value="">Select food type</option>
-                          <option value="perishable">
-                            Perishable (Fruits, Vegetables, Dairy)
-                          </option>
-                          <option value="non-perishable">
-                            Non-Perishable (Canned Goods, Rice, Pasta)
-                          </option>
-                          <option value="prepared">Prepared Meals</option>
-                          <option value="other">Other</option>
-                        </select>
+                        />
                       </div>
 
+                      {/* Food Description */}
+                      <div className="mb-4">
+                        <label
+                          htmlFor="foodDescription"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Food Description
+                        </label>
+                        <textarea
+                          id="foodDescription"
+                          rows={3}
+                          value={donationRequest.foodDescription}
+                          onChange={(e) =>
+                            setDonationRequest({
+                              ...donationRequest,
+                              foodDescription: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Detailed description of the food items"
+                          required
+                        />
+                      </div>
+
+                      {/* Quantity */}
                       <div className="mb-4">
                         <label
                           htmlFor="quantity"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Quantity Needed
+                          Quantity
                         </label>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <input
                               type="number"
                               id="quantity"
+                              min="1"
                               value={donationRequest.quantity}
                               onChange={(e) =>
                                 setDonationRequest({
@@ -1174,7 +1236,7 @@ const handleDonationRequestSubmit = async (e) => {
                                 })
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                              placeholder="Number"
+                              placeholder="Amount"
                               required
                             />
                           </div>
@@ -1195,35 +1257,14 @@ const handleDonationRequestSubmit = async (e) => {
                               <option value="kg">Kilograms</option>
                               <option value="lbs">Pounds</option>
                               <option value="units">Units</option>
-                              <option value="meals">Meals</option>
+                              <option value="liters">Liters</option>
+                              <option value="packets">Packets</option>
                             </select>
                           </div>
                         </div>
                       </div>
 
-                      <div className="mb-4">
-                        <label
-                          htmlFor="preferredDate"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Preferred Delivery/Pickup Date
-                        </label>
-                        <input
-                          type="date"
-                          id="preferredDate"
-                          value={donationRequest.preferredDate}
-                          onChange={(e) =>
-                            setDonationRequest({
-                              ...donationRequest,
-                              preferredDate: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          required
-                          min={new Date().toISOString().split("T")[0]}
-                        />
-                      </div>
-
+                      {/* Storage Requirements */}
                       <div className="mb-4">
                         <label
                           htmlFor="storageRequirements"
@@ -1246,21 +1287,48 @@ const handleDonationRequestSubmit = async (e) => {
                           <option value="">Select storage needs</option>
                           <option value="refrigerated">Refrigerated</option>
                           <option value="frozen">Frozen</option>
-                          <option value="shelf-stable">Shelf Stable</option>
-                          <option value="none">No Special Requirements</option>
+                          <option value="dry storage">Dry Storage</option>
+                          <option value="room temperature">
+                            Room Temperature
+                          </option>
                         </select>
                       </div>
 
+                      {/* Preferred Delivery Date */}
+                      <div className="mb-4">
+                        <label
+                          htmlFor="preferredDeliveryDate"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Preferred Delivery Date
+                        </label>
+                        <input
+                          type="date"
+                          id="preferredDeliveryDate"
+                          value={donationRequest.preferredDeliveryDate}
+                          onChange={(e) =>
+                            setDonationRequest({
+                              ...donationRequest,
+                              preferredDeliveryDate: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          min={new Date().toISOString().split("T")[0]}
+                          required
+                        />
+                      </div>
+
+                      {/* Purpose */}
                       <div className="mb-4">
                         <label
                           htmlFor="purpose"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Purpose of Donation
+                          Purpose
                         </label>
-                        <textarea
+                        <input
+                          type="text"
                           id="purpose"
-                          rows={3}
                           value={donationRequest.purpose}
                           onChange={(e) =>
                             setDonationRequest({
@@ -1269,8 +1337,54 @@ const handleDonationRequestSubmit = async (e) => {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="What will this food donation be used for? (e.g., community kitchen, food bank distribution)"
+                          placeholder="What will this food be used for?"
                           required
+                        />
+                      </div>
+
+                      {/* Special Instructions */}
+                      <div className="mb-4">
+                        <label
+                          htmlFor="specialInstructions"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Special Instructions (Optional)
+                        </label>
+                        <textarea
+                          id="specialInstructions"
+                          rows={2}
+                          value={donationRequest.specialInstructions}
+                          onChange={(e) =>
+                            setDonationRequest({
+                              ...donationRequest,
+                              specialInstructions: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Any special handling or delivery instructions"
+                        />
+                      </div>
+
+                      {/* Delivery Address */}
+                      <div className="mb-4">
+                        <label
+                          htmlFor="deliveryAddress"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Delivery Address (Optional)
+                        </label>
+                        <textarea
+                          id="deliveryAddress"
+                          rows={2}
+                          value={donationRequest.deliveryAddress}
+                          onChange={(e) =>
+                            setDonationRequest({
+                              ...donationRequest,
+                              deliveryAddress: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="If different from your organization's address"
                         />
                       </div>
 
@@ -1279,7 +1393,7 @@ const handleDonationRequestSubmit = async (e) => {
                           type="submit"
                           className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:col-start-2 sm:text-sm"
                         >
-                          Request Food Donation
+                          Submit Request
                         </button>
                         <button
                           type="button"

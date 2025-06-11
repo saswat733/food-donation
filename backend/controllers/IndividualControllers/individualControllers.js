@@ -136,7 +136,6 @@ exports.requestDonation = async (req, res, next) => {
       foodType,
       foodDescription,
       quantity,
-      unit,
       storageRequirements,
       preferredDeliveryDate,
       purpose,
@@ -144,33 +143,37 @@ exports.requestDonation = async (req, res, next) => {
       deliveryAddress,
     } = req.body;
 
+    console.log("Requesting donation with data:::", req.body);
+
     if (
       !donor ||
       !foodType ||
       !foodDescription ||
       !quantity ||
-      !unit ||
       !storageRequirements ||
       !preferredDeliveryDate ||
       !purpose
     ) {
+      console.log("Missing required fields");
       return next(new AppError("Required fields are missing", 400));
     }
 
     // Check if donor exists
     const donorExists = await mongoose.model("User").findById(donor);
+
     if (!donorExists) {
+      console.log("Donor not found");
       return next(new AppError("Donor not found", 404));
     }
-
+    console.log("Donor found:", donorExists);
     const newDonation = await Donation.create({
       donor,
       recipient: req.user.id,
       foodType,
       foodDescription,
       quantity: {
-        value: quantity,
-        unit,
+        value: quantity.quantity,
+        urit:quantity.unit,
       },
       storageRequirements,
       preferredDeliveryDate,
@@ -179,6 +182,8 @@ exports.requestDonation = async (req, res, next) => {
       deliveryAddress: deliveryAddress || null,
       status: "pending",
     });
+
+    console.log("New donation created:", newDonation);
 
     res.status(201).json({
       status: "success",

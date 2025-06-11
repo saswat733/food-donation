@@ -10,12 +10,14 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null); // Add this line for user data
   const navigate = useNavigate();
 
+  
   // Initialize axios instance
   const api = axios.create({
-    baseURL:
-      "https://food-donation-7xzo.onrender.com/api/v1",
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     withCredentials: true,
   });
+
+
 
   // Add response interceptor to handle 401 errors
   api.interceptors.response.use(
