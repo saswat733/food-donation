@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-
+import mongoose from "mongoose"
 const RequestSchema = new mongoose.Schema({
   organization: {
     type: mongoose.Schema.Types.ObjectId,
@@ -34,4 +33,5 @@ const RequestSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Request', RequestSchema);
+const Request= mongoose.model('Request', RequestSchema);
+export default Request

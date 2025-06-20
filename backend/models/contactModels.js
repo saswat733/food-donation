@@ -1,22 +1,29 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const contactMessageSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-    },
-    message: {
-      type: String,
-      required: true,
-    },
+const contactSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Name is required"],
+    trim: true,
   },
-  { timestamps: true }
-);
+  email: {
+    type: String,
+    required: [true, "Email is required"],
+    trim: true,
+    lowercase: true,
+    match: [/.+\@.+\..+/, "Please enter a valid email address"],
+  },
+  message: {
+    type: String,
+    required: [true, "Message is required"],
+    trim: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-const Contact = mongoose.model('Contact', contactMessageSchema);
-module.exports = Contact;
+const Contact = mongoose.model("Contact", contactSchema);
+
+export default Contact;

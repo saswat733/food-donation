@@ -1,12 +1,16 @@
-const express = require('express');
+import express from 'express'
 const router = express.Router();
-const { getUserDonations, createDonation, getAllDonations } = require('../controllers/foodDonationController.js');
-const authMiddleware = require('../middleware/authMiddleware');
+import { createDonation, getAllDonations, getDonationById, getUserDonations, updateDonationStatus } from "../controllers/foodDonationController.js"
 
-router.get('/donations', authMiddleware, getUserDonations); // Protected route
-router.post('/donations', authMiddleware, createDonation); // Protected route
+// Public routes
+router.post('/',createDonation);
 
-router.get('/all-donations',getAllDonations);
+// authMiddlewareed routes (require authentication)
+router.get('/user/:email',  getUserDonations);
 
+// Admin routes
+router.get('/', getAllDonations);
+router.get('/:id', getDonationById);
+router.put('/:id/status',updateDonationStatus);
 
-module.exports = router;
+export default router

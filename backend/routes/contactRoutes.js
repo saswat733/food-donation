@@ -1,7 +1,15 @@
-const express = require("express");
-const { handleContactForm } = require("../controllers/contactController");
+import express from "express";
+import {
+  submitContactForm,
+  getAllContacts,
+} from "../controllers/contactController.js";
+
 const router = express.Router();
 
-router.post("/contactform", handleContactForm);
+// Public routes
+router.post("/contactform", submitContactForm);
 
-module.exports = router;
+// Admin routes (protected)
+router.get("/contacts", getAllContacts);
+
+export default router;

@@ -1,5 +1,5 @@
-const express = require("express");
-const {
+import express from "express";
+import {
   getDonations,
   recordDonation,
   getDonors,
@@ -16,12 +16,10 @@ const {
   updateDonor,
   deleteDonor,
   getDonor,
-} = require("../controllers/OrganizationControllers/OrganizationController");
-const { protect } = require("../middleware/authMiddleware");
+} from "../controllers/OrganizationControllers/OrganizationController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-
-// Re-route into other resource routers
 
 // Protect all routes
 router.use(protect);
@@ -32,10 +30,10 @@ router.route("/donations").get(getDonations).post(recordDonation);
 // Donor routes
 router.route("/donors").get(getDonors).post(createDonor);
 
-// Volunteer routes
-router.route("/volunteers").get(getVolunteers).post(addVolunteer);
 router.route("/donors/:id").get(getDonor).put(updateDonor).delete(deleteDonor);
 
+// Volunteer routes
+router.route("/volunteers").get(getVolunteers).post(addVolunteer);
 
 // Inventory routes
 router.route("/inventory").get(getInventory).post(updateInventory);
@@ -49,4 +47,4 @@ router.route("/events").get(getEvents).post(createEvent);
 // Stats route
 router.route("/stats").get(getStats);
 
-module.exports = router;
+export default router;

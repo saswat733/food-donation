@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose"
 const InventorySchema = new mongoose.Schema({
   organization: {
     type: mongoose.Schema.Types.ObjectId,
@@ -36,4 +35,5 @@ const InventorySchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Inventory", InventorySchema);
+const Inventory = mongoose.model("Inventory", InventorySchema);
+export default Inventory

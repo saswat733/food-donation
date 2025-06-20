@@ -1,9 +1,16 @@
-const express = require("express");
-const authController = require("../controllers/authController");
-const validateRequest = require("../middleware/validateRequest");
-const authMiddleware = require("../middleware/authMiddleware"); // Add this
-
-const rateLimit = require("express-rate-limit");
+import express from "express";
+import {
+  register,
+  login,
+  getMe,
+  logout,
+} from "../controllers/authController.js";
+import {
+  validateRegistration,
+  validateLogin,
+} from "../middleware/validateRequest.js";
+import { protect } from "../middleware/authMiddleware.js";
+import rateLimit from "express-rate-limit";
 
 const router = express.Router();
 
@@ -17,29 +24,28 @@ const authLimiter = rateLimit({
 router.post(
   "/register",
   authLimiter,
-  validateRequest.validateRegistration, // Validation middleware
-  authController.register
+  validateRegistration, // Validation middleware
+  register
 );
 
 router.post(
   "/login",
   authLimiter,
-  validateRequest.validateLogin, // Add login validation
-  authController.login
+  validateLogin, // Add login validation
+  login
 );
 
 // Protected routes (require authentication)
 router.get(
   "/me",
-  authMiddleware.protect, // Authentication middleware
-  authController.getMe
+  protect, // Authentication middleware
+  getMe
 );
 
 router.post(
   "/logout",
-  authMiddleware.protect, // Authentication middleware
-  authController.logout
+  protect, // Authentication middleware
+  logout
 );
 
-
-module.exports = router;
+export default router;

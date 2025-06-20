@@ -1,9 +1,8 @@
-const jwt = require("jsonwebtoken");
-const AppError = require("../utils/AppError.js");
-const { User } = require("../models/userModels");
-// const User = require("../models/userModels/User"); // Base user model
+import jwt from "jsonwebtoken";
+import AppError from "../utils/AppError.js";
+import { User } from "../models/userModels.js";
 
-exports.protect = async (req, res, next) => {
+export const protect = async (req, res, next) => {
   try {
     // 1) Get token from headers
     let token;
@@ -40,7 +39,7 @@ exports.protect = async (req, res, next) => {
 };
 
 // Optional: Role-based access control
-exports.restrictTo = (...roles) => {
+export const restrictTo = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       return next(

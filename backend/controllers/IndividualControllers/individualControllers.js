@@ -1,17 +1,18 @@
-const Organization = require("../../models/userModels").Organization;
-const mongoose = require("mongoose");
-const VolunteerApplication = require("../../models/individualModels/VolunteerApplication");
-const ServiceOffer = require("../../models/individualModels/ServiceOffer");
-const Donation = require("../../models/individualModels/Donation");
-const AppError = require("../../utils/AppError.js");
+import mongoose from "mongoose";
+import AppError from "../../utils/AppError.js";
+// import Organization from "../../models/userModels/Organization.js";
+import VolunteerApplication from "../../models/individualModels/VolunteerApplication.js";
+// import ServiceOffer from "../../models/individualModels/ServiceOffer.js";
+// import Donation from "../../models/individualModels/Donation.js";
+import { Organization } from "../../models/userModels.js";
+import Donation from "../../models/individualModels/Donation.js";
 
-exports.getDashboardStats = async (req, res, next) => {
+export const getDashboardStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // Get total food donations (count instead of sum)
     const totalDonations = await Donation.countDocuments({
-      recipient: mongoose.Types.ObjectId(userId),
+      recipient: new mongoose.Types.ObjectId(userId),
       status: "delivered",
     });
 
@@ -25,7 +26,7 @@ exports.getDashboardStats = async (req, res, next) => {
       status: "active",
     });
 
-    const upcomingEvents = 0; // Implement based on your events model
+    const upcomingEvents = 0;
 
     res.status(200).json({
       status: "success",
@@ -41,7 +42,7 @@ exports.getDashboardStats = async (req, res, next) => {
   }
 };
 
-exports.getOrganizations = async (req, res, next) => {
+export const getOrganizations = async (req, res, next) => {
   try {
     const organizations = await Organization.find().select("orgName category");
 
@@ -57,7 +58,7 @@ exports.getOrganizations = async (req, res, next) => {
   }
 };
 
-exports.submitVolunteerApplication = async (req, res, next) => {
+export const submitVolunteerApplication = async (req, res, next) => {
   try {
     const { organization, skills, availability, motivation } = req.body;
 
@@ -102,7 +103,7 @@ exports.submitVolunteerApplication = async (req, res, next) => {
   }
 };
 
-exports.submitServiceOffer = async (req, res, next) => {
+export const submitServiceOffer = async (req, res, next) => {
   try {
     const { serviceType, description, availability, location } = req.body;
 
@@ -129,7 +130,7 @@ exports.submitServiceOffer = async (req, res, next) => {
   }
 };
 
-exports.requestDonation = async (req, res, next) => {
+export const requestDonation = async (req, res, next) => {
   try {
     const {
       donor,
@@ -143,8 +144,6 @@ exports.requestDonation = async (req, res, next) => {
       deliveryAddress,
     } = req.body;
 
-    console.log("Requesting donation with data:::", req.body);
-
     if (
       !donor ||
       !foodType ||
@@ -154,18 +153,14 @@ exports.requestDonation = async (req, res, next) => {
       !preferredDeliveryDate ||
       !purpose
     ) {
-      console.log("Missing required fields");
       return next(new AppError("Required fields are missing", 400));
     }
 
-    // Check if donor exists
     const donorExists = await mongoose.model("User").findById(donor);
-
     if (!donorExists) {
-      console.log("Donor not found");
       return next(new AppError("Donor not found", 404));
     }
-    console.log("Donor found:", donorExists);
+
     const newDonation = await Donation.create({
       donor,
       recipient: req.user.id,
@@ -173,7 +168,7 @@ exports.requestDonation = async (req, res, next) => {
       foodDescription,
       quantity: {
         value: quantity.quantity,
-        urit:quantity.unit,
+        unit: quantity.unit,
       },
       storageRequirements,
       preferredDeliveryDate,
@@ -182,8 +177,6 @@ exports.requestDonation = async (req, res, next) => {
       deliveryAddress: deliveryAddress || null,
       status: "pending",
     });
-
-    console.log("New donation created:", newDonation);
 
     res.status(201).json({
       status: "success",
@@ -196,7 +189,7 @@ exports.requestDonation = async (req, res, next) => {
   }
 };
 
-exports.getDonations = async (req, res, next) => {
+export const getDonations = async (req, res, next) => {
   try {
     const userDonations = await Donation.find({ recipient: req.user.id })
       .populate("donor", "name email")
@@ -215,7 +208,7 @@ exports.getDonations = async (req, res, next) => {
   }
 };
 
-exports.getDonationRequests = async (req, res, next) => {
+export const getDonationRequests = async (req, res, next) => {
   try {
     const donationRequests = await Donation.find({
       recipient: req.user.id,
@@ -235,9 +228,8 @@ exports.getDonationRequests = async (req, res, next) => {
   }
 };
 
-exports.getDonors = async (req, res, next) => {
+export const getDonors = async (req, res, next) => {
   try {
-    // Get users who have donated before
     const donors = await Donation.aggregate([
       { $match: { status: "delivered" } },
       { $group: { _id: "$donor" } },
@@ -274,8 +266,7 @@ exports.getDonors = async (req, res, next) => {
   }
 };
 
-// Additional function to update donation status
-exports.updateDonationStatus = async (req, res, next) => {
+export const updateDonationStatus = async (req, res, next) => {
   try {
     const { donationId } = req.params;
     const { status } = req.body;

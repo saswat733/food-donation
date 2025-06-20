@@ -1,7 +1,6 @@
 // models/User.js
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
+import mongoose from "mongoose"
+import bcrypt from "bcryptjs"
 
 const userSchema = new mongoose.Schema(
   {
@@ -84,4 +83,4 @@ const Restaurant = User.discriminator(
   })
 );
 
-module.exports = { User, Individual, Organization, Restaurant };
+export { User, Individual, Organization, Restaurant };

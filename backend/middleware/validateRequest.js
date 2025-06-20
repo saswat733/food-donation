@@ -1,7 +1,7 @@
-const { body, validationResult } = require("express-validator");
-const AppError = require("../utils/AppError.js");
+import { body, validationResult } from "express-validator";
+import AppError from "../utils/AppError.js";
 
-exports.validateRegistration = [
+export const validateRegistration = [
   body("email").isEmail().withMessage("Please provide a valid email"),
   body("password")
     .isLength({ min: 8 })
@@ -43,7 +43,7 @@ exports.validateRegistration = [
   },
 ];
 
-exports.validateLogin = [
+export const validateLogin = [
   body("email").isEmail().withMessage("Please provide a valid email"),
   body("password").notEmpty().withMessage("Password is required"),
   (req, res, next) => {

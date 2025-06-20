@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose"
 
 const serviceOfferSchema = new mongoose.Schema({
   user: {
@@ -35,4 +35,4 @@ const serviceOfferSchema = new mongoose.Schema({
 
 const ServiceOffer = mongoose.model("ServiceOffer", serviceOfferSchema);
 
-module.exports = ServiceOffer;
+export default ServiceOffer;

@@ -1,7 +1,8 @@
-const Donation = require("../models/organizationModels/Donation");
-const Volunteer = require("../models/organizationModels/Volunteer");
-const Inventory = require("../models/organizationModels/Inventory");
-const Event = require("../models/organizationModels/Event");
+import Donation from "../models/organizationModels/Donation.js";
+import Volunteer from "../models/organizationModels/Volunteer.js";
+import Inventory from "../models/organizationModels/Inventory.js";
+import Event from "../models/organizationModels/Event.js";
+import mongoose from "mongoose";
 
 const calculateStats = async (organizationId) => {
   // Get current date and date 30 days ago
@@ -65,7 +66,7 @@ const calculateStats = async (organizationId) => {
   const prevInventory = await Inventory.aggregate([
     {
       $match: {
-        organization: mongoose.Types.ObjectId(organizationId),
+        organization: new mongoose.Types.ObjectId(organizationId),
         lastUpdated: { $lt: thirtyDaysAgo },
       },
     },
@@ -77,7 +78,7 @@ const calculateStats = async (organizationId) => {
   const recentInventory = await Inventory.aggregate([
     {
       $match: {
-        organization: mongoose.Types.ObjectId(organizationId),
+        organization: new mongoose.Types.ObjectId(organizationId),
         lastUpdated: { $gte: thirtyDaysAgo },
       },
     },
@@ -126,4 +127,4 @@ const calculateStats = async (organizationId) => {
   };
 };
 
-module.exports = calculateStats;
+export default calculateStats;

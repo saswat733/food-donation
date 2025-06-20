@@ -2,8 +2,27 @@ import axios from "axios";
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { Send } from "lucide-react";
+import * as yup from "yup";
 
-const VITE_API = import.meta.env.VITE_API_URL;
+// const VITE_API = import.meta.env.VITE_API_URL;
+
+// Validation schema
+const contactSchema = yup.object().shape({
+  name: yup
+    .string()
+    .required("Name is required")
+    .min(2, "Name is too short")
+    .max(50, "Name is too long"),
+  email: yup
+    .string()
+    .required("Email is required")
+    .email("Invalid email format"),
+  message: yup
+    .string()
+    .required("Message is required")
+    .min(10, "Message is too short")
+    .max(500, "Message is too long"),
+});
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -11,33 +30,93 @@ const ContactUs = () => {
     email: "",
     message: "",
   });
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [submitCount, setSubmitCount] = useState(0);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+  };
+
+  const validateForm = async () => {
+    try {
+      await contactSchema.validate(formData, { abortEarly: false });
+      setErrors({});
+      return true;
+    } catch (err) {
+      const newErrors = {};
+      err.inner.forEach((error) => {
+        newErrors[error.path] = error.message;
+      });
+      setErrors(newErrors);
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitCount((prev) => prev + 1);
+
+    const isValid = await validateForm();
+    if (!isValid) return;
+
     setIsSubmitting(true);
 
     try {
       const response = await axios.post(
-        `${VITE_API}/api/contact/contactform`,
-        formData
+        `${import.meta.env.VITE_API_BASE_URL}/dashboard/contact/contactform`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 10000, // 10 seconds timeout
+        }
       );
-      console.log(response.data);
-      toast.success("Message sent successfully!");
-      setSuccess(true);
-      setFormData({ name: "", email: "", message: "" });
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Message sent successfully! We'll get back to you soon.");
+        setFormData({ name: "", email: "", message: "" });
+        setSubmitCount(0);
+      } else {
+        throw new Error("Unexpected response from server");
+      }
     } catch (error) {
-      toast.error("Failed to send message. Please try again.");
-      console.error(error);
+      console.error("Submission error:", error);
+
+      let errorMessage = "Failed to send message. Please try again.";
+      if (error.response) {
+        // Server responded with a status code outside 2xx
+        if (error.response.status === 429) {
+          errorMessage = "Too many requests. Please wait before trying again.";
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = "No response from server. Please check your connection.";
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Check if form is empty
+  const isFormEmpty = !formData.name && !formData.email && !formData.message;
 
   return (
     <section className="bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 py-20 px-6 sm:px-8 lg:px-12">
@@ -63,6 +142,7 @@ const ContactUs = () => {
           <form
             onSubmit={handleSubmit}
             className="relative bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 space-y-6"
+            noValidate
           >
             <div className="space-y-1">
               <label
@@ -77,10 +157,18 @@ const ContactUs = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
+                className={`w-full border ${
+                  errors.name
+                    ? "border-red-500"
+                    : "border-gray-200 dark:border-gray-600"
+                } rounded-xl p-3 focus:outline-none focus:ring-2 ${
+                  errors.name ? "focus:ring-red-500" : "focus:ring-blue-500"
+                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white`}
                 disabled={isSubmitting}
               />
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -96,10 +184,18 @@ const ContactUs = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
+                className={`w-full border ${
+                  errors.email
+                    ? "border-red-500"
+                    : "border-gray-200 dark:border-gray-600"
+                } rounded-xl p-3 focus:outline-none focus:ring-2 ${
+                  errors.email ? "focus:ring-red-500" : "focus:ring-blue-500"
+                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white`}
                 disabled={isSubmitting}
               />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -115,41 +211,32 @@ const ContactUs = () => {
                 value={formData.message}
                 onChange={handleChange}
                 rows="5"
-                className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
+                className={`w-full border ${
+                  errors.message
+                    ? "border-red-500"
+                    : "border-gray-200 dark:border-gray-600"
+                } rounded-xl p-3 focus:outline-none focus:ring-2 ${
+                  errors.message ? "focus:ring-red-500" : "focus:ring-blue-500"
+                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white`}
                 disabled={isSubmitting}
               ></textarea>
+              {errors.message && (
+                <p className="text-red-500 text-sm mt-1">{errors.message}</p>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting || success}
+              disabled={isSubmitting || isFormEmpty}
               className={`w-full py-3 px-6 rounded-full font-medium flex items-center justify-center space-x-2 transition-all ${
-                success
-                  ? "bg-green-500 text-white"
-                  : isSubmitting
+                isSubmitting
                   ? "bg-blue-400 text-white cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600 to-green-500 text-white hover:shadow-lg"
+                  : isFormEmpty
+                  ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-green-500 text-white hover:shadow-lg hover:from-blue-700 hover:to-green-600"
               }`}
             >
-              {success ? (
-                <>
-                  <span>Message Sent</span>
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </>
-              ) : isSubmitting ? (
+              {isSubmitting ? (
                 <>
                   <span>Sending...</span>
                   <svg

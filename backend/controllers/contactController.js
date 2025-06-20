@@ -1,19 +1,45 @@
-const Contact = require("../models/contactModels");
-const handleContactForm = async (req, res) => {
-  const { name, email, message } = req.body;
-    console.log(name,email)
-  if (!name || !email || !message) {
-    return res.status(400).json({ message: "All fields are required." });
-  }
+import Contact from "../models/contactModels.js";
+import { sendContactConfirmationEmail } from "../services/emailService.js";
 
+export const submitContactForm = async (req, res) => {
   try {
-    const newMessage = new Contact({ name, email, message });
-    await newMessage.save();
-    res.status(201).json({ message: "Message sent successfully!" });
+    const { name, email, message } = req.body;
+
+    // Create new contact entry
+    const newContact = new Contact({
+      name,
+      email,
+      message,
+    });
+
+    // Save to database
+    await newContact.save();
+
+    // Send confirmation email
+    await sendContactConfirmationEmail({ name, email, message });
+
+    res.status(201).json({
+      success: true,
+      message: "Thank you for contacting us! We'll get back to you soon.",
+    });
   } catch (error) {
-    console.error("Contact form error:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    console.error("Error submitting contact form:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit contact form. Please try again later.",
+    });
   }
 };
 
-module.exports = { handleContactForm };
+export const getAllContacts = async (req, res) => {
+  try {
+    const contacts = await Contact.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: contacts });
+  } catch (error) {
+    console.error("Error fetching contacts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch contacts.",
+    });
+  }
+};

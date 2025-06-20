@@ -1,19 +1,18 @@
-const Donation = require("../../models/organizationModels/Donation");
-const Donor = require("../../models/organizationModels/Donor");
-const Volunteer = require("../../models/organizationModels/Volunteer");
-const Inventory = require("../../models/organizationModels/Inventory");
-const Request = require("../../models/organizationModels/Request");
-const Event = require("../../models/organizationModels/Event");
-const { Organization } = require("../../models/userModels");
-const calculateStats = require("../../utils/statsCalculator");
-const AppError = require("../../utils/AppError.js");
+import Donation from "../../models/organizationModels/Donation.js";
+import Donor from "../../models/organizationModels/Donor.js";
+import Volunteer from "../../models/organizationModels/Volunteer.js";
+import Inventory from "../../models/organizationModels/Inventory.js";
+import Request from "../../models/organizationModels/Request.js";
+import Event from "../../models/organizationModels/Event.js";
+import { Organization } from "../../models/userModels.js";
+import calculateStats from "../../utils/statsCalculator.js";
+import AppError from "../../utils/AppError.js";
 
 // @desc    Get all donations for organization
 // @route   GET /api/v1/org/donations
 // @access  Private (Organization)
-exports.getDonations = async (req, res, next) => {
+export const getDonations = async (req, res, next) => {
   try {
-    // Verify organization role
     if (req.user.role !== "organization") {
       return next(
         new AppError("Only organizations can access this resource", 403)
@@ -27,54 +26,46 @@ exports.getDonations = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: donations.length,
-      data: {
-        donations,
-      },
+      data: { donations },
     });
   } catch (err) {
     next(err);
   }
 };
 
-exports.createDonor = async (req, res, next) => {
+export const createDonor = async (req, res, next) => {
   try {
-    // Verify organization role
-    if (req.user.role !== 'organization') {
-      return next(new AppError('Only organizations can create donors', 403));
+    if (req.user.role !== "organization") {
+      return next(new AppError("Only organizations can create donors", 403));
     }
 
-    // Add organization to req.body
     req.body.organization = req.user.id;
 
-    // Validate required fields
     if (!req.body.name || !req.body.email) {
-      return next(new AppError('Name and email are required', 400));
+      return next(new AppError("Name and email are required", 400));
     }
 
-    // Check if donor with this email already exists for this organization
     const existingDonor = await Donor.findOne({
       email: req.body.email,
-      organization: req.user.id
+      organization: req.user.id,
     });
 
     if (existingDonor) {
-      return next(new AppError('Donor with this email already exists', 400));
+      return next(new AppError("Donor with this email already exists", 400));
     }
 
     const donor = await Donor.create(req.body);
 
     res.status(201).json({
-      status: 'success',
-      data: {
-        donor
-      }
+      status: "success",
+      data: { donor },
     });
   } catch (err) {
-    if (err.name === 'ValidationError') {
+    if (err.name === "ValidationError") {
       return next(new AppError(err.message, 400));
     }
     if (err.code === 11000) {
-      return next(new AppError('Email already exists', 400));
+      return next(new AppError("Email already exists", 400));
     }
     next(err);
   }
@@ -83,40 +74,32 @@ exports.createDonor = async (req, res, next) => {
 // @desc    Update a donor
 // @route   PUT /api/v1/org/donors/:id
 // @access  Private (Organization)
-exports.updateDonor = async (req, res, next) => {
+export const updateDonor = async (req, res, next) => {
   try {
-    if (req.user.role !== 'organization') {
-      return next(new AppError('Only organizations can update donors', 403));
+    if (req.user.role !== "organization") {
+      return next(new AppError("Only organizations can update donors", 403));
     }
 
     const donor = await Donor.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        organization: req.user.id // Ensure the donor belongs to this organization
-      },
+      { _id: req.params.id, organization: req.user.id },
       req.body,
-      {
-        new: true,
-        runValidators: true
-      }
+      { new: true, runValidators: true }
     );
 
     if (!donor) {
-      return next(new AppError('No donor found with that ID', 404));
+      return next(new AppError("No donor found with that ID", 404));
     }
 
     res.status(200).json({
-      status: 'success',
-      data: {
-        donor
-      }
+      status: "success",
+      data: { donor },
     });
   } catch (err) {
-    if (err.name === 'ValidationError') {
+    if (err.name === "ValidationError") {
       return next(new AppError(err.message, 400));
     }
     if (err.code === 11000) {
-      return next(new AppError('Email already exists', 400));
+      return next(new AppError("Email already exists", 400));
     }
     next(err);
   }
@@ -125,24 +108,24 @@ exports.updateDonor = async (req, res, next) => {
 // @desc    Delete a donor
 // @route   DELETE /api/v1/org/donors/:id
 // @access  Private (Organization)
-exports.deleteDonor = async (req, res, next) => {
+export const deleteDonor = async (req, res, next) => {
   try {
-    if (req.user.role !== 'organization') {
-      return next(new AppError('Only organizations can delete donors', 403));
+    if (req.user.role !== "organization") {
+      return next(new AppError("Only organizations can delete donors", 403));
     }
 
     const donor = await Donor.findOneAndDelete({
       _id: req.params.id,
-      organization: req.user.id // Ensure the donor belongs to this organization
+      organization: req.user.id,
     });
 
     if (!donor) {
-      return next(new AppError('No donor found with that ID', 404));
+      return next(new AppError("No donor found with that ID", 404));
     }
 
     res.status(204).json({
-      status: 'success',
-      data: null
+      status: "success",
+      data: null,
     });
   } catch (err) {
     next(err);
@@ -152,49 +135,44 @@ exports.deleteDonor = async (req, res, next) => {
 // @desc    Get a single donor
 // @route   GET /api/v1/org/donors/:id
 // @access  Private (Organization)
-exports.getDonor = async (req, res, next) => {
+export const getDonor = async (req, res, next) => {
   try {
-    if (req.user.role !== 'organization') {
-      return next(new AppError('Only organizations can access this resource', 403));
+    if (req.user.role !== "organization") {
+      return next(
+        new AppError("Only organizations can access this resource", 403)
+      );
     }
 
     const donor = await Donor.findOne({
       _id: req.params.id,
-      organization: req.user.id
+      organization: req.user.id,
     });
 
     if (!donor) {
-      return next(new AppError('No donor found with that ID', 404));
+      return next(new AppError("No donor found with that ID", 404));
     }
 
     res.status(200).json({
-      status: 'success',
-      data: {
-        donor
-      }
+      status: "success",
+      data: { donor },
     });
   } catch (err) {
     next(err);
   }
 };
 
-
 // @desc    Record new donation
 // @route   POST /api/v1/org/donations
 // @access  Private (Organization)
-exports.recordDonation = async (req, res, next) => {
+export const recordDonation = async (req, res, next) => {
   try {
-    // Verify organization role
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can record donations", 403));
     }
 
-    // Add organization to req.body
     req.body.organization = req.user.id;
-
     const donation = await Donation.create(req.body);
 
-    // Update donor's donation history
     if (req.body.donor) {
       await Donor.findByIdAndUpdate(req.body.donor, {
         $push: { donationHistory: donation._id },
@@ -203,12 +181,9 @@ exports.recordDonation = async (req, res, next) => {
 
     res.status(201).json({
       status: "success",
-      data: {
-        donation,
-      },
+      data: { donation },
     });
   } catch (err) {
-    // Handle validation errors
     if (err.name === "ValidationError") {
       return next(new AppError(err.message, 400));
     }
@@ -219,7 +194,7 @@ exports.recordDonation = async (req, res, next) => {
 // @desc    Get all donors for organization
 // @route   GET /api/v1/org/donors
 // @access  Private (Organization)
-exports.getDonors = async (req, res, next) => {
+export const getDonors = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(
@@ -234,9 +209,7 @@ exports.getDonors = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: donors.length,
-      data: {
-        donors,
-      },
+      data: { donors },
     });
   } catch (err) {
     next(err);
@@ -246,7 +219,7 @@ exports.getDonors = async (req, res, next) => {
 // @desc    Get all volunteers for organization
 // @route   GET /api/v1/org/volunteers
 // @access  Private (Organization)
-exports.getVolunteers = async (req, res, next) => {
+export const getVolunteers = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(
@@ -261,9 +234,7 @@ exports.getVolunteers = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: volunteers.length,
-      data: {
-        volunteers,
-      },
+      data: { volunteers },
     });
   } catch (err) {
     next(err);
@@ -273,16 +244,14 @@ exports.getVolunteers = async (req, res, next) => {
 // @desc    Add new volunteer
 // @route   POST /api/v1/org/volunteers
 // @access  Private (Organization)
-exports.addVolunteer = async (req, res, next) => {
+export const addVolunteer = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can add volunteers", 403));
     }
 
-    // Add organization to req.body
     req.body.organization = req.user.id;
 
-    // Convert skills and availability strings to arrays
     if (req.body.skills) {
       req.body.skills = req.body.skills
         .split(",")
@@ -296,7 +265,6 @@ exports.addVolunteer = async (req, res, next) => {
         .filter((day) => day);
     }
 
-    // Validate required fields
     if (!req.body.name || !req.body.email || !req.body.phone) {
       return next(new AppError("Name, email and phone are required", 400));
     }
@@ -305,9 +273,7 @@ exports.addVolunteer = async (req, res, next) => {
 
     res.status(201).json({
       status: "success",
-      data: {
-        volunteer,
-      },
+      data: { volunteer },
     });
   } catch (err) {
     if (err.code === 11000) {
@@ -323,7 +289,7 @@ exports.addVolunteer = async (req, res, next) => {
 // @desc    Get inventory items for organization
 // @route   GET /api/v1/org/inventory
 // @access  Private (Organization)
-exports.getInventory = async (req, res, next) => {
+export const getInventory = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(
@@ -338,9 +304,7 @@ exports.getInventory = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: inventory.length,
-      data: {
-        inventory,
-      },
+      data: { inventory },
     });
   } catch (err) {
     next(err);
@@ -350,16 +314,14 @@ exports.getInventory = async (req, res, next) => {
 // @desc    Update inventory
 // @route   POST /api/v1/org/inventory
 // @access  Private (Organization)
-exports.updateInventory = async (req, res, next) => {
+export const updateInventory = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can update inventory", 403));
     }
 
-    // Add organization to req.body
     req.body.organization = req.user.id;
 
-    // Validate required fields
     if (!req.body.foodItem || !req.body.quantity || !req.body.expiryDate) {
       return next(
         new AppError("Food item, quantity and expiry date are required", 400)
@@ -370,9 +332,7 @@ exports.updateInventory = async (req, res, next) => {
 
     res.status(201).json({
       status: "success",
-      data: {
-        inventory: inventoryItem,
-      },
+      data: { inventory: inventoryItem },
     });
   } catch (err) {
     if (err.name === "ValidationError") {
@@ -385,7 +345,7 @@ exports.updateInventory = async (req, res, next) => {
 // @desc    Get all requests for organization
 // @route   GET /api/v1/org/requests
 // @access  Private (Organization)
-exports.getRequests = async (req, res, next) => {
+export const getRequests = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(
@@ -400,9 +360,7 @@ exports.getRequests = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: requests.length,
-      data: {
-        requests,
-      },
+      data: { requests },
     });
   } catch (err) {
     next(err);
@@ -412,16 +370,14 @@ exports.getRequests = async (req, res, next) => {
 // @desc    Create new request
 // @route   POST /api/v1/org/requests
 // @access  Private (Organization)
-exports.createRequest = async (req, res, next) => {
+export const createRequest = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can create requests", 403));
     }
 
-    // Add organization to req.body
     req.body.organization = req.user.id;
 
-    // Validate required fields
     if (!req.body.itemNeeded || !req.body.quantity || !req.body.purpose) {
       return next(
         new AppError("Item needed, quantity and purpose are required", 400)
@@ -432,9 +388,7 @@ exports.createRequest = async (req, res, next) => {
 
     res.status(201).json({
       status: "success",
-      data: {
-        request,
-      },
+      data: { request },
     });
   } catch (err) {
     if (err.name === "ValidationError") {
@@ -447,7 +401,7 @@ exports.createRequest = async (req, res, next) => {
 // @desc    Get all events for organization
 // @route   GET /api/v1/org/events
 // @access  Private (Organization)
-exports.getEvents = async (req, res, next) => {
+export const getEvents = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(
@@ -462,9 +416,7 @@ exports.getEvents = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: events.length,
-      data: {
-        events,
-      },
+      data: { events },
     });
   } catch (err) {
     next(err);
@@ -474,16 +426,14 @@ exports.getEvents = async (req, res, next) => {
 // @desc    Create new event
 // @route   POST /api/v1/org/events
 // @access  Private (Organization)
-exports.createEvent = async (req, res, next) => {
+export const createEvent = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can create events", 403));
     }
 
-    // Add organization to req.body
     req.body.organization = req.user.id;
 
-    // Validate required fields
     if (!req.body.name || !req.body.date || !req.body.location) {
       return next(new AppError("Name, date and location are required", 400));
     }
@@ -492,9 +442,7 @@ exports.createEvent = async (req, res, next) => {
 
     res.status(201).json({
       status: "success",
-      data: {
-        event,
-      },
+      data: { event },
     });
   } catch (err) {
     if (err.name === "ValidationError") {
@@ -507,7 +455,7 @@ exports.createEvent = async (req, res, next) => {
 // @desc    Get dashboard statistics
 // @route   GET /api/v1/org/stats
 // @access  Private (Organization)
-exports.getStats = async (req, res, next) => {
+export const getStats = async (req, res, next) => {
   try {
     if (req.user.role !== "organization") {
       return next(
@@ -519,9 +467,7 @@ exports.getStats = async (req, res, next) => {
 
     res.status(200).json({
       status: "success",
-      data: {
-        stats,
-      },
+      data: { stats },
     });
   } catch (err) {
     next(err);

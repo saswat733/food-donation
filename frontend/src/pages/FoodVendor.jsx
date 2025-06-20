@@ -1,5 +1,15 @@
-import React from "react";
-import { FaStar, FaUtensils, FaBreadSlice, FaCarrot, FaHotel, FaCalendarAlt, FaMapMarkerAlt, FaPhone, FaEnvelope } from "react-icons/fa";
+import React, { useState } from "react";
+import {
+  FaStar,
+  FaUtensils,
+  FaBreadSlice,
+  FaCarrot,
+  FaHotel,
+  FaCalendarAlt,
+  FaMapMarkerAlt,
+  FaPhone,
+  FaEnvelope,
+} from "react-icons/fa";
 
 const FoodVendorPage = () => {
   // Fake vendor data
@@ -15,8 +25,8 @@ const FoodVendorPage = () => {
       icon: <FaUtensils className="text-3xl text-blue-500" />,
       contact: {
         phone: "(555) 123-4567",
-        email: "events@royalcatering.com"
-      }
+        email: "events@royalcatering.com",
+      },
     },
     {
       id: 2,
@@ -29,8 +39,8 @@ const FoodVendorPage = () => {
       icon: <FaCarrot className="text-3xl text-green-500" />,
       contact: {
         phone: "(555) 234-5678",
-        email: "harvest@greenvalleyfarms.com"
-      }
+        email: "harvest@greenvalleyfarms.com",
+      },
     },
     {
       id: 3,
@@ -43,8 +53,8 @@ const FoodVendorPage = () => {
       icon: <FaHotel className="text-3xl text-purple-500" />,
       contact: {
         phone: "(555) 345-6789",
-        email: "events@grandballroom.com"
-      }
+        email: "events@grandballroom.com",
+      },
     },
     {
       id: 4,
@@ -57,9 +67,9 @@ const FoodVendorPage = () => {
       icon: <FaBreadSlice className="text-3xl text-amber-500" />,
       contact: {
         phone: "(555) 456-7890",
-        email: "orders@bakehousedelight.com"
-      }
-    }
+        email: "orders@bakehousedelight.com",
+      },
+    },
   ];
 
   // Recent donations data
@@ -70,7 +80,7 @@ const FoodVendorPage = () => {
       food: "200 buffet-style meals (Asian fusion)",
       time: "2 hours ago",
       status: "Claimed by City Food Bank",
-      type: "Prepared Meals"
+      type: "Prepared Meals",
     },
     {
       id: 2,
@@ -78,7 +88,7 @@ const FoodVendorPage = () => {
       food: "150 breakfast boxes",
       time: "5 hours ago",
       status: "Available for pickup",
-      type: "Packaged Food"
+      type: "Packaged Food",
     },
     {
       id: 3,
@@ -86,7 +96,7 @@ const FoodVendorPage = () => {
       food: "75 lunch boxes (vegetarian)",
       time: "Yesterday",
       status: "Delivered to Shelter",
-      type: "Prepared Meals"
+      type: "Prepared Meals",
     },
     {
       id: 4,
@@ -94,8 +104,8 @@ const FoodVendorPage = () => {
       food: "300 sandwiches & salads",
       time: "2 days ago",
       status: "Distributed to 3 NGOs",
-      type: "Prepared Meals"
-    }
+      type: "Prepared Meals",
+    },
   ];
 
   // Food types for filter
@@ -105,21 +115,93 @@ const FoodVendorPage = () => {
     "Fresh Produce",
     "Packaged Food",
     "Bakery Items",
-    "Dairy Products"
+    "Dairy Products",
   ];
 
-  const [activeFilter, setActiveFilter] = React.useState("All Types");
-  const [showVendorModal, setShowVendorModal] = React.useState(false);
-  const [selectedVendor, setSelectedVendor] = React.useState(null);
+  const [activeFilter, setActiveFilter] = useState("All Types");
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [formData, setFormData] = useState({
+    businessName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    businessType: "",
+    address: "",
+    foodType: "",
+    quantity: "",
+    foodDetails: "",
+    pickupTime: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const openVendorModal = (vendor) => {
     setSelectedVendor(vendor);
     setShowVendorModal(true);
   };
 
-  const filteredDonations = activeFilter === "All Types" 
-    ? recentDonations 
-    : recentDonations.filter(donation => donation.type === activeFilter);
+  const filteredDonations =
+    activeFilter === "All Types"
+      ? recentDonations
+      : recentDonations.filter((donation) => donation.type === activeFilter);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess(false);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/dashboard/vendorFoodDonation/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit donation");
+      }
+
+      const data = await response.json();
+      setSubmitSuccess(true);
+      // Reset form
+      setFormData({
+        businessName: "",
+        contactName: "",
+        email: "",
+        phone: "",
+        businessType: "",
+        address: "",
+        foodType: "",
+        quantity: "",
+        foodDetails: "",
+        pickupTime: "",
+      });
+    } catch (error) {
+      console.error("Submission error:", error);
+      setSubmitError(
+        error.message || "An error occurred while submitting your donation"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <section className="bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 py-20 px-6 sm:px-8 lg:px-12">
@@ -137,21 +219,35 @@ const FoodVendorPage = () => {
                     {selectedVendor.type} • {selectedVendor.location}
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowVendorModal(false)}
                   className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
 
               <div className="flex items-center mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <FaStar 
+                  <FaStar
                     key={i}
-                    className={`w-5 h-5 ${i < Math.floor(selectedVendor.rating) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+                    className={`w-5 h-5 ${
+                      i < Math.floor(selectedVendor.rating)
+                        ? "text-yellow-400"
+                        : "text-gray-300 dark:text-gray-600"
+                    }`}
                   />
                 ))}
                 <span className="ml-1 text-gray-600 dark:text-gray-300">
@@ -206,7 +302,9 @@ const FoodVendorPage = () => {
             Donate Your Surplus Food
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Connect your catering business, wedding venue, or food service with organizations that can distribute your surplus food to those in need.
+            Connect your catering business, wedding venue, or food service with
+            organizations that can distribute your surplus food to those in
+            need.
           </p>
         </div>
 
@@ -239,14 +337,12 @@ const FoodVendorPage = () => {
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredVendors.map((vendor) => (
-              <div 
-                key={vendor.id} 
+              <div
+                key={vendor.id}
                 className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700 cursor-pointer"
                 onClick={() => openVendorModal(vendor)}
               >
-                <div className="flex justify-center mb-4">
-                  {vendor.icon}
-                </div>
+                <div className="flex justify-center mb-4">{vendor.icon}</div>
                 <h4 className="text-xl font-semibold text-center text-gray-900 dark:text-white mb-1">
                   {vendor.name}
                 </h4>
@@ -257,7 +353,11 @@ const FoodVendorPage = () => {
                   {[...Array(5)].map((_, i) => (
                     <FaStar
                       key={i}
-                      className={`w-4 h-4 ${i < Math.floor(vendor.rating) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(vendor.rating)
+                          ? "text-yellow-400"
+                          : "text-gray-300 dark:text-gray-600"
+                      }`}
                     />
                   ))}
                   <span className="ml-1 text-sm text-gray-600 dark:text-gray-300">
@@ -265,7 +365,9 @@ const FoodVendorPage = () => {
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 text-center">
-                  <span className="font-medium">{vendor.donations} donations</span>
+                  <span className="font-medium">
+                    {vendor.donations} donations
+                  </span>
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                   Recent: {vendor.recentDonation}
@@ -288,8 +390,8 @@ const FoodVendorPage = () => {
                   onClick={() => setActiveFilter(type)}
                   className={`px-3 py-1 text-sm rounded-full mr-2 whitespace-nowrap ${
                     activeFilter === type
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {type}
@@ -297,10 +399,13 @@ const FoodVendorPage = () => {
               ))}
             </div>
           </div>
-          
+
           <div className="space-y-4">
             {filteredDonations.map((donation) => (
-              <div key={donation.id} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+              <div
+                key={donation.id}
+                className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
+              >
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white">
@@ -313,11 +418,13 @@ const FoodVendorPage = () => {
                       {donation.type}
                     </span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    donation.status.includes('Available') 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                  }`}>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      donation.status.includes("Available")
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                    }`}
+                  >
                     {donation.status}
                   </span>
                 </div>
@@ -347,7 +454,8 @@ const FoodVendorPage = () => {
                 Register Your Business
               </h4>
               <p className="text-gray-600 dark:text-gray-300">
-                Create a vendor profile with your business details and typical surplus food types.
+                Create a vendor profile with your business details and typical
+                surplus food types.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700">
@@ -358,7 +466,8 @@ const FoodVendorPage = () => {
                 Post Available Food
               </h4>
               <p className="text-gray-600 dark:text-gray-300">
-                When you have surplus, quickly post details including quantity, type, and pickup time.
+                When you have surplus, quickly post details including quantity,
+                type, and pickup time.
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700">
@@ -369,7 +478,8 @@ const FoodVendorPage = () => {
                 Coordinate Pickup
               </h4>
               <p className="text-gray-600 dark:text-gray-300">
-                Our system matches you with a nearby organization who will arrange pickup.
+                Our system matches you with a nearby organization who will
+                arrange pickup.
               </p>
             </div>
           </div>
@@ -380,68 +490,112 @@ const FoodVendorPage = () => {
           <h3 className="text-3xl font-semibold text-center text-gray-900 dark:text-white mb-6">
             Ready to Donate?
           </h3>
-          <form className="space-y-6">
+
+          {submitSuccess && (
+            <div className="mb-6 p-4 bg-green-100 text-green-800 rounded-lg dark:bg-green-900/30 dark:text-green-400">
+              Thank you! Your donation offer has been submitted successfully.
+              We've sent a confirmation to your email.
+            </div>
+          )}
+
+          {submitError && (
+            <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-lg dark:bg-red-900/30 dark:text-red-400">
+              {submitError}
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="business-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="business-name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Business Name *
                 </label>
                 <input
                   type="text"
                   id="business-name"
+                  name="businessName"
                   required
+                  value={formData.businessName}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Your business or venue name"
                 />
               </div>
               <div>
-                <label htmlFor="contact-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="contact-name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Contact Person *
                 </label>
                 <input
                   type="text"
                   id="contact-name"
+                  name="contactName"
                   required
+                  value={formData.contactName}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Your name"
                 />
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Email Address *
                 </label>
                 <input
                   type="email"
                   id="email"
+                  name="email"
                   required
+                  value={formData.email}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="your@email.com"
                 />
               </div>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Phone Number *
                 </label>
                 <input
                   type="tel"
                   id="phone"
+                  name="phone"
                   required
+                  value={formData.phone}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
             </div>
-            
+
             <div>
-              <label htmlFor="business-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="business-type"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Business Type *
               </label>
               <select
                 id="business-type"
+                name="businessType"
                 required
+                value={formData.businessType}
+                onChange={handleInputChange}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="">Select your business type</option>
@@ -456,13 +610,19 @@ const FoodVendorPage = () => {
             </div>
 
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Business Address *
               </label>
               <input
                 type="text"
                 id="address"
+                name="address"
                 required
+                value={formData.address}
+                onChange={handleInputChange}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Street address for pickup"
               />
@@ -470,12 +630,18 @@ const FoodVendorPage = () => {
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="food-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="food-type"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Type of Food Available *
                 </label>
                 <select
                   id="food-type"
+                  name="foodType"
                   required
+                  value={formData.foodType}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">Select food type</option>
@@ -488,44 +654,62 @@ const FoodVendorPage = () => {
                 </select>
               </div>
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="quantity"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Approximate Quantity *
                 </label>
                 <input
                   type="text"
                   id="quantity"
+                  name="quantity"
                   required
+                  value={formData.quantity}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="e.g., 50 meals, 20 lbs"
                 />
               </div>
             </div>
-            
+
             <div>
-              <label htmlFor="food-details" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="food-details"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Food Details (Ingredients, Storage Requirements) *
               </label>
               <textarea
                 id="food-details"
+                name="foodDetails"
                 rows="3"
                 required
+                value={formData.foodDetails}
+                onChange={handleInputChange}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Describe the food you have available, including any allergens, special storage requirements, etc."
               ></textarea>
             </div>
 
             <div>
-              <label htmlFor="pickup-time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="pickup-time"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Preferred Pickup Time *
               </label>
               <input
                 type="datetime-local"
                 id="pickup-time"
+                name="pickupTime"
                 required
+                value={formData.pickupTime}
+                onChange={handleInputChange}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
-            
+
             <div className="flex items-start">
               <input
                 id="agree-terms"
@@ -533,17 +717,31 @@ const FoodVendorPage = () => {
                 required
                 className="h-4 w-4 mt-1 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
               />
-              <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                I agree to the <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">terms and conditions</a> of food donation and confirm that the food is safe for consumption.
+              <label
+                htmlFor="agree-terms"
+                className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+              >
+                I agree to the{" "}
+                <a
+                  href="#"
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  terms and conditions
+                </a>{" "}
+                of food donation and confirm that the food is safe for
+                consumption.
               </label>
             </div>
-            
+
             <div className="text-center">
               <button
                 type="submit"
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-medium rounded-full hover:shadow-xl transition-all shadow-md hover:shadow-lg hover:from-blue-700 hover:to-green-600"
+                disabled={isSubmitting}
+                className={`px-8 py-3 bg-gradient-to-r from-blue-600 to-green-500 text-white font-medium rounded-full hover:shadow-xl transition-all shadow-md hover:shadow-lg hover:from-blue-700 hover:to-green-600 ${
+                  isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
-                Submit Donation Offer
+                {isSubmitting ? "Submitting..." : "Submit Donation Offer"}
               </button>
             </div>
           </form>
@@ -556,7 +754,8 @@ const FoodVendorPage = () => {
             Have Questions About Donating?
           </h4>
           <p className="text-gray-600 dark:text-gray-300 mb-8">
-            Our team is here to help you with the donation process and answer any questions about food safety, logistics, or partnerships.
+            Our team is here to help you with the donation process and answer
+            any questions about food safety, logistics, or partnerships.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium rounded-full hover:shadow-xl transition-all shadow-md hover:shadow-lg">

@@ -1,29 +1,30 @@
-const express = require("express");
-const dashboardController = require("../controllers/IndividualControllers/individualControllers");
+import express from "express";
+// import dashboardController from "../controllers/IndividualControllers/individualControllers";
 // const authController = require("../controllers/authController");
-const authMiddleware = require("../middleware/authMiddleware"); // Add this
+import { protect } from "../middleware/authMiddleware.js"; // Add this
+import { getDashboardStats, getDonationRequests, getDonations, getDonors, getOrganizations, requestDonation, submitServiceOffer, submitVolunteerApplication } from "../controllers/IndividualControllers/individualControllers.js";
 const router = express.Router();
 
 // Protect all routes after this middleware
-router.use(authMiddleware.protect);
+router.use(protect);
 
 // Dashboard stats
-router.get("/stats", dashboardController.getDashboardStats);
+router.get("/stats", getDashboardStats);
 
 // Organizations
-router.get("/organizations", dashboardController.getOrganizations);
+router.get("/organizations", getOrganizations);
 
 // Volunteer applications
-router.post("/volunteer", dashboardController.submitVolunteerApplication);
+router.post("/volunteer", submitVolunteerApplication);
 
 // Service offers
-router.post("/service", dashboardController.submitServiceOffer);
+router.post("/service", submitServiceOffer);
 
 // Donations
-router.post("/donation", dashboardController.requestDonation);
-router.get("/donations", dashboardController.getDonations);
-router.get("/donations-requests", dashboardController.getDonationRequests);
+router.post("/donation", requestDonation);
+router.get("/donations", getDonations);
+router.get("/donations-requests", getDonationRequests);
 
-router.get("/donors", dashboardController.getDonors);
+router.get("/donors", getDonors);
 
-module.exports = router;
+export default router

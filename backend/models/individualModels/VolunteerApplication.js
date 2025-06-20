@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose"
 const volunteerApplicationSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -40,4 +39,4 @@ const VolunteerApplication = mongoose.model(
   volunteerApplicationSchema
 );
 
-module.exports = VolunteerApplication;
+export default VolunteerApplication;

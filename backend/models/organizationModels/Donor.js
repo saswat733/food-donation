@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose"
 const DonorSchema = new mongoose.Schema(
   {
     organization: {
@@ -65,4 +64,5 @@ DonorSchema.virtual("totalDonations").get(function () {
   return this.donationHistory ? this.donationHistory.length : 0;
 });
 
-module.exports = mongoose.model("Donor", DonorSchema);
+const Donor =mongoose.model("Donor", DonorSchema);
+export default Donor;
