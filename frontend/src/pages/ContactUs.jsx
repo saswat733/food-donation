@@ -24,6 +24,10 @@ const contactSchema = yup.object().shape({
     .max(500, "Message is too long"),
 });
 
+
+const API_URL =
+  import.meta.env.VITE_API_BASE_URL + "/dashboard/contact/contactform" ||
+  "http://localhost:3000/api/v1/dashboard/contact/contactform"; 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -75,16 +79,12 @@ const ContactUs = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/dashboard/contact/contactform`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 10000, // 10 seconds timeout
-        }
-      );
+      const response = await axios.post(`${API_URL}`, formData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        timeout: 10000, // 10 seconds timeout
+      });
 
       if (response.status === 200 || response.status === 201) {
         toast.success("Message sent successfully! We'll get back to you soon.");
