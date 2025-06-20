@@ -26,8 +26,7 @@ const contactSchema = yup.object().shape({
 
 
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL + "/dashboard/contact/contactform" ||
-  "http://localhost:3000/api/v1/dashboard/contact/contactform"; 
+  import.meta.env.VITE_API_BASE_URL + "/dashboard/contact/contactform"
 const ContactUs = () => {
   const [formData, setFormData] = useState({
     name: "",
