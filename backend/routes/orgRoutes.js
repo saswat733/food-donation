@@ -21,6 +21,7 @@ import {
   updateApplicationStatus,
   getAllVolunteerRecords,
   getAllOrgVolunteerRecords,
+  getRestaurantIncomingDonations,
 } from "../controllers/OrganizationControllers/OrganizationController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -34,6 +35,7 @@ router.route("/donations").get(getDonations).post(recordDonation);
 
 // Incoming donation requests from individuals
 router.route("/incoming-donations").get(getIncomingDonations);
+router.route("/incoming-rest-donations").get(getRestaurantIncomingDonations);
 
 router.route("/incoming-donations/:id").patch(updateIncomingDonationStatus);
 

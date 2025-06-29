@@ -10,6 +10,7 @@ import AppError from "../../utils/AppError.js";
 import IndividualDonation from "../../models/individualModels/Donation.js";
 import VolunteerApplication from "../../models/individualModels/VolunteerApplication.js";
 import OrgDonation from "../../models/organizationModels/Donation.js";
+import resDonation from "../../models/restaurantModels/foodDonationModel.js";
 
 // @desc    Get all donations for organization
 // @route   GET /api/v1/org/donations
@@ -22,7 +23,7 @@ export const getDonations = async (req, res, next) => {
       );
     }
 
-    const donations = await Donation.find({ organization: req.user.id })
+    const donations = await OrgDonation.find({ organization: req.user.id })
       .populate("donor", "name email phone")
       .sort("-date");
 
@@ -46,9 +47,28 @@ export const getIncomingDonations = async (req, res, next) => {
         new AppError("Only organizations can access this resource", 403)
       );
     }
-    console.log(req.user.id);
-
     const donations = await IndividualDonation.find({ recipient: req.user.id })
+      .populate("donor", "name email")
+      .sort("-requestDate");
+
+    res.status(200).json({
+      status: "success",
+      results: donations.length,
+      data: { donations },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+export const getRestaurantIncomingDonations = async (req, res, next) => {
+  try {
+    if (req.user.role !== "organization") {
+      return next(
+        new AppError("Only organizations can access this resource", 403)
+      );
+    }
+    const donations = await resDonation
+      .find({ recipient: req.user.id })
       .populate("donor", "name email")
       .sort("-requestDate");
 
@@ -85,7 +105,6 @@ export const updateIncomingDonationStatus = async (req, res, next) => {
     if (!validStatuses.includes(status)) {
       return next(new AppError("Invalid status value", 400));
     }
-    console.log("status:",status)
     const donation = await IndividualDonation.findOneAndUpdate(
       { _id: req.params.id, recipient: req.user.id },
       { status },
@@ -154,7 +173,6 @@ export const updateApplicationStatus = async (req, res, next) => {
       processedAt: Date.now()
     };
 
-    console.log(updateData)
 
     // Add rejection reason only if provided and status is rejected
     if (status === "rejected") {
@@ -171,7 +189,6 @@ export const updateApplicationStatus = async (req, res, next) => {
       updateData,
       { new: true, runValidators: true }
     ).populate("user", "name email");
-    console.log("application:", application)
     if (!application) {
       return next(new AppError("Application not found, already processed, or you don't have permission", 404));
     }
@@ -233,13 +250,11 @@ export const getApplicationMetrics = async (req, res, next) => {
 
 export const createDonor = async (req, res, next) => {
   try {
-    console.log("req.user:", req.user)
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can create donors", 403));
     }
 
     req.body.organization = req.user.id;
-    console.log("req.body:", req.body)
     if (!req.body.name || !req.body.email) {
       return next(new AppError("Name and email are required", 400));
     }
@@ -249,14 +264,12 @@ export const createDonor = async (req, res, next) => {
       organization: req.user.id,
     });
 
-    console.log("existingDonor:", existingDonor)
 
     if (existingDonor) {
       return next(new AppError("Donor with this email already exists", 400));
     }
 
     const donor = await Donor.create(req.body);
-    console.log("donor:", donor)
     res.status(201).json({
       status: "success",
       data: { donor },
@@ -367,14 +380,11 @@ export const getDonor = async (req, res, next) => {
 // @access  Private (Organization)
 export const recordDonation = async (req, res, next) => {
   try {
-    console.log("req.user:",req.user)
     if (req.user.role !== "organization") {
       return next(new AppError("Only organizations can record donations", 403));
     }
-    console.log("req:",req.body)
     req.body.organization = req.user.id;
     const donation = await OrgDonation.create(req.body);
-    console.log("donation:",donation)
     if (req.body.donor) {
       await Donor.findByIdAndUpdate(req.body.donor, {
         $push: { donationHistory: donation._id },
@@ -565,12 +575,15 @@ export const addVolunteer = async (req, res, next) => {
       return next(new AppError("Only organizations can add volunteers", 403));
     }
 
-    req.body.organization = req.user.id;
 
+
+    req.body.organization = req.user.id;
+    console.log("add:",req.user.id)
     // Either require user field or set it to undefined (not null)
     if (!req.body.user) {
       req.body.user = undefined; // This won't trigger the unique index
     }
+
 
     // Process skills if provided
     if (req.body.skills && typeof req.body.skills === "string") {
@@ -580,6 +593,7 @@ export const addVolunteer = async (req, res, next) => {
         .filter((skill) => skill);
     }
 
+
     // Validate availability
     if (req.body.availability) {
       const validOptions = ["weekdays", "weekends", "both", "flexible"];
@@ -587,6 +601,7 @@ export const addVolunteer = async (req, res, next) => {
         return next(new AppError("Invalid availability value", 400));
       }
     }
+    console.log("req.body:", req.body);
 
     if (!req.body.name || !req.body.email || !req.body.phone) {
       return next(new AppError("Name, email and phone are required", 400));
@@ -597,6 +612,7 @@ export const addVolunteer = async (req, res, next) => {
       organization: req.body.organization,
       email: req.body.email,
     });
+    console.log("existingVolunteer:", existingVolunteer);
 
     if (existingVolunteer) {
       return next(
@@ -607,8 +623,9 @@ export const addVolunteer = async (req, res, next) => {
       );
     }
 
-    const volunteer = await Volunteer.create(req.body);
 
+    const volunteer = await Volunteer.create(req.body);
+    console.log("volunteer:", volunteer);
     res.status(201).json({
       status: "success",
       data: { volunteer },

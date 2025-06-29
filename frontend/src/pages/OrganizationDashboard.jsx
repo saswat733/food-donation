@@ -16,16 +16,19 @@ export default function OrganizationDashboard() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showDonorModal, setShowDonorModal] = useState(false);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
-  const [showIncomingDonationModal, setShowIncomingDonationModal] = useState(false);
+  const [showIncomingDonationModal, setShowIncomingDonationModal] =
+    useState(false);
   const [incomingDonations, setIncomingDonations] = useState([]);
   // Selected items for processing
   const [selectedApplication, setSelectedApplication] = useState(null);
-  const [selectedIncomingDonation, setSelectedIncomingDonation] = useState(null);
-  
+  const [selectedIncomingDonation, setSelectedIncomingDonation] =
+    useState(null);
+
   // Status states
   const [applicationStatus, setApplicationStatus] = useState("approved");
   const [rejectionReason, setRejectionReason] = useState("");
-  const [incomingDonationStatus, setIncomingDonationStatus] = useState("pending");
+  const [incomingDonationStatus, setIncomingDonationStatus] =
+    useState("pending");
 
   // Data states
   const [donations, setDonations] = useState([]);
@@ -47,7 +50,7 @@ export default function OrganizationDashboard() {
     incomingDonations: true,
   });
 
-  const user=JSON.parse(localStorage.getItem("user"))
+  const user = JSON.parse(localStorage.getItem("user"));
   // console.log("user",user)
   // Form states
   const [donationForm, setDonationForm] = useState({
@@ -56,7 +59,7 @@ export default function OrganizationDashboard() {
     quantity: "",
     expirationDate: "",
     storageRequirements: "",
-    status: "pending"
+    status: "pending",
   });
 
   const [volunteerForm, setVolunteerForm] = useState({
@@ -74,7 +77,7 @@ export default function OrganizationDashboard() {
     location: "",
     description: "",
     volunteersNeeded: "",
-    status: "upcoming"
+    status: "upcoming",
   });
 
   const [inventoryForm, setInventoryForm] = useState({
@@ -83,7 +86,7 @@ export default function OrganizationDashboard() {
     quantity: "",
     unit: "kg",
     expiryDate: "",
-    storageLocation: ""
+    storageLocation: "",
   });
 
   const [requestForm, setRequestForm] = useState({
@@ -91,7 +94,7 @@ export default function OrganizationDashboard() {
     quantity: "",
     urgency: "medium",
     purpose: "",
-    status: "pending"
+    status: "pending",
   });
 
   const handleLogout = () => {
@@ -107,7 +110,7 @@ export default function OrganizationDashboard() {
     email: "",
     phone: "",
     address: "",
-    notes: ""
+    notes: "",
   });
 
   // Stats data
@@ -124,12 +127,12 @@ export default function OrganizationDashboard() {
       change: "+0",
       changeType: "neutral",
     },
-    
-    { 
-      name: "Upcoming Events", 
-      value: "0", 
-      change: "0", 
-      changeType: "neutral" 
+
+    {
+      name: "Upcoming Events",
+      value: "0",
+      change: "0",
+      changeType: "neutral",
     },
   ]);
   const fetchDashboardData = useCallback(async () => {
@@ -144,15 +147,15 @@ export default function OrganizationDashboard() {
         applications: true,
         incomingDonations: true,
       });
-  
-      const token = localStorage.getItem('token');
+
+      const token = localStorage.getItem("token");
       const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       };
-  
+
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
-  
+
       const [
         donationsRes,
         donorsRes,
@@ -184,7 +187,7 @@ export default function OrganizationDashboard() {
           res.json()
         ),
       ]);
-  
+
       setDonations(
         donationsRes.data.donations.map((d) => ({
           ...d,
@@ -192,10 +195,10 @@ export default function OrganizationDashboard() {
           expirationDate: new Date(d.expirationDate).toLocaleDateString(),
         }))
       );
-  
+
       setDonors(donorsRes.data.donors);
 
-      console.log("donors::",donors)
+      console.log("donors::", donors);
       setVolunteers(volunteersRes.data.volunteers);
       setInventory(
         inventoryRes.data.inventory.map((i) => ({
@@ -211,7 +214,7 @@ export default function OrganizationDashboard() {
         }))
       );
 
-      console.log("stats:",statsRes)
+      console.log("stats:", statsRes);
       setStats([
         {
           name: "Total Donations",
@@ -229,7 +232,7 @@ export default function OrganizationDashboard() {
             ? "positive"
             : "negative",
         },
-       
+
         {
           name: "Upcoming Events",
           value: `${statsRes?.data?.stats?.upcomingEvents ?? 0}`,
@@ -267,10 +270,9 @@ export default function OrganizationDashboard() {
     }
   }, []);
 
-
   useEffect(() => {
     let isMounted = true;
-  
+
     const loadData = async () => {
       try {
         await fetchUserData();
@@ -284,10 +286,9 @@ export default function OrganizationDashboard() {
         }
       }
     };
-  
-    
+
     loadData();
-  
+
     return () => {
       isMounted = false;
     };
@@ -336,7 +337,7 @@ export default function OrganizationDashboard() {
         }
       );
 
-      if (response.data.success) {
+      if (response.data) {
         toast.success("Donation status updated successfully");
         setShowIncomingDonationModal(false);
         setSelectedIncomingDonation(null);
@@ -376,14 +377,19 @@ export default function OrganizationDashboard() {
 
   const handleDonationSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate required fields
-    if (!donationForm.donor || !donationForm.foodType || !donationForm.quantity || 
-        !donationForm.expirationDate || !donationForm.status) {
+    if (
+      !donationForm.donor ||
+      !donationForm.foodType ||
+      !donationForm.quantity ||
+      !donationForm.expirationDate ||
+      !donationForm.status
+    ) {
       toast.error("Please fill all required fields");
       return;
     }
-  
+
     // Validate quantity is a positive number
     const quantity = parseFloat(donationForm.quantity);
     if (isNaN(quantity)) {
@@ -394,7 +400,7 @@ export default function OrganizationDashboard() {
       toast.error("Quantity must be greater than 0");
       return;
     }
-  
+
     // Validate expiration date is in the future
     const today = new Date();
     const expirationDate = new Date(donationForm.expirationDate);
@@ -402,44 +408,45 @@ export default function OrganizationDashboard() {
       toast.error("Expiration date must be in the future");
       return;
     }
-  
+
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("No authentication token found");
       }
-  
+
       // Prepare the donation data
       const donationData = {
         donor: donationForm.donor === "anonymous" ? null : donationForm.donor,
         foodType: donationForm.foodType,
         quantity: quantity,
         expirationDate: donationForm.expirationDate,
-        storageRequirements: donationForm.storageRequirements || "None specified",
+        storageRequirements:
+          donationForm.storageRequirements || "None specified",
         status: donationForm.status,
-        organization: user._id
+        organization: user._id,
       };
-  
+
       // Make the API call
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/org/donations`,
         donationData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          timeout: 10000 // 10 seconds timeout
+          timeout: 10000, // 10 seconds timeout
         }
       );
-  
+
       if (!response) {
         throw new Error(response.data.message || "Failed to record donation");
       }
-  
+
       // Show success message
       toast.success("Donation recorded successfully");
-  
+
       // Reset the form
       setDonationForm({
         donor: "",
@@ -447,27 +454,27 @@ export default function OrganizationDashboard() {
         quantity: "",
         expirationDate: "",
         storageRequirements: "",
-        status: "pending"
+        status: "pending",
       });
-  
+
       // Close the modal
       setShowDonationModal(false);
-  
+
       // Refresh the donations data
       try {
         const donationsResponse = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/org/donations`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
         );
-  
+
         if (donationsResponse.data?.data?.donations) {
           setDonations(
-            donationsResponse.data.data.donations.map(d => ({
+            donationsResponse.data.data.donations.map((d) => ({
               ...d,
               date: new Date(d.date).toLocaleDateString(),
               expirationDate: new Date(d.expirationDate).toLocaleDateString(),
@@ -478,16 +485,16 @@ export default function OrganizationDashboard() {
         console.error("Error refreshing donations:", refreshError);
         toast.error("Donation recorded but failed to refresh list");
       }
-  
     } catch (err) {
       console.error("Donation submission error:", err);
-      
+
       let errorMessage = "Failed to record donation";
       if (err.response) {
         // Server responded with a status code outside 2xx
-        errorMessage = err.response.data?.message || 
-                      err.response.statusText || 
-                      `Server error: ${err.response.status}`;
+        errorMessage =
+          err.response.data?.message ||
+          err.response.statusText ||
+          `Server error: ${err.response.status}`;
       } else if (err.request) {
         // Request was made but no response received
         errorMessage = "No response from server. Please check your connection.";
@@ -495,32 +502,35 @@ export default function OrganizationDashboard() {
         // Something happened in setting up the request
         errorMessage = err.message;
       }
-  
+
       toast.error(errorMessage);
     }
   };
 
   const handleVolunteerSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       // Validate required fields
       if (!volunteerForm.name || !volunteerForm.email || !volunteerForm.phone) {
         toast.error("Name, email and phone are required");
         return;
       }
-  
+
       // Process skills string into array
       const skillsArray = volunteerForm.skills
-        ? volunteerForm.skills.split(',').map(skill => skill.trim()).filter(skill => skill)
+        ? volunteerForm.skills
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter((skill) => skill)
         : [];
-  
-      const token = localStorage.getItem('token');
+
+      const token = localStorage.getItem("token");
       if (!token) {
         toast.error("Authentication token not found");
         return;
       }
-  
+
       // Prepare volunteer data
       const volunteerData = {
         name: volunteerForm.name,
@@ -529,59 +539,61 @@ export default function OrganizationDashboard() {
         skills: skillsArray,
         availability: volunteerForm.availability,
         organization: user._id, // Include organization ID
-        source: "manual" // Mark as manually added
+        source: "manual", // Mark as manually added
       };
-      console.log("volunteerData:",volunteerData)
+      console.log("volunteerData:", volunteerData);
       // Make API call
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/org/volunteers`,
         volunteerData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      console.log("response:",response)
-  
-      if (response.data.success) {
+      console.log("response:", response);
+
+      if (response.data) {
         toast.success("Volunteer added successfully");
-        
+
         // Reset form
         setVolunteerForm({
           name: "",
           email: "",
           phone: "",
           skills: "",
-          availability: "flexible"
+          availability: "flexible",
         });
-        
+
         // Close modal
         setShowVolunteerModal(false);
-        
+
         // Refresh volunteers list
         const volunteersResponse = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/org/volunteers`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
         );
-        
+
         setVolunteers(volunteersResponse.data.data.volunteers || []);
       } else {
-        throw new Error(response.data.message || "Failed to add volunteer");
+        throw new Error("Failed to add volunteer");
       }
     } catch (err) {
       console.error("Error adding volunteer:", err);
-      
-     
-      
-      toast.error(err);
+      toast.error(
+        err.response?.data?.message || err.message || "Failed to add volunteer"
+      );
+
+      // Keep the modal open on error so user can correct the input
+      setIsSubmitting(false);
     }
   };
 
@@ -591,7 +603,7 @@ export default function OrganizationDashboard() {
       await orgDashboardService.createEvent({
         ...eventForm,
         volunteersNeeded: parseInt(eventForm.volunteersNeeded),
-        organization: userData._id
+        organization: userData._id,
       });
       toast.success("Event created successfully");
       setShowEventModal(false);
@@ -601,7 +613,7 @@ export default function OrganizationDashboard() {
         location: "",
         description: "",
         volunteersNeeded: "",
-        status: "upcoming"
+        status: "upcoming",
       });
       fetchDashboardData();
     } catch (err) {
@@ -616,13 +628,13 @@ export default function OrganizationDashboard() {
       if (donorForm._id) {
         await orgDashboardService.updateDonor(donorForm._id, {
           ...donorForm,
-          organization: userData._id
+          organization: userData._id,
         });
         toast.success("Donor updated successfully");
       } else {
         await orgDashboardService.createDonor({
           ...donorForm,
-          organization: userData._id
+          organization: userData._id,
         });
         toast.success("Donor added successfully");
       }
@@ -632,7 +644,7 @@ export default function OrganizationDashboard() {
         email: "",
         phone: "",
         address: "",
-        notes: ""
+        notes: "",
       });
       fetchDashboardData();
     } catch (error) {
@@ -646,7 +658,7 @@ export default function OrganizationDashboard() {
       await orgDashboardService.updateInventory({
         ...inventoryForm,
         quantity: parseFloat(inventoryForm.quantity),
-        organization: userData._id
+        organization: userData._id,
       });
       toast.success("Inventory updated successfully");
       setShowInventoryModal(false);
@@ -656,7 +668,7 @@ export default function OrganizationDashboard() {
         quantity: "",
         unit: "kg",
         expiryDate: "",
-        storageLocation: ""
+        storageLocation: "",
       });
       fetchDashboardData();
     } catch (err) {
@@ -671,7 +683,7 @@ export default function OrganizationDashboard() {
       await orgDashboardService.createRequest({
         ...requestForm,
         quantity: parseFloat(requestForm.quantity),
-        organization: userData._id
+        organization: userData._id,
       });
       toast.success("Request created successfully");
       setShowRequestModal(false);
@@ -680,7 +692,7 @@ export default function OrganizationDashboard() {
         quantity: "",
         urgency: "medium",
         purpose: "",
-        status: "pending"
+        status: "pending",
       });
       fetchDashboardData();
     } catch (err) {
@@ -697,11 +709,10 @@ export default function OrganizationDashboard() {
       email: donor.email,
       phone: donor.phone,
       address: donor.address,
-      notes: donor.notes || ""
+      notes: donor.notes || "",
     });
     setShowDonorModal(true);
   };
-  
 
   const deleteDonor = async (id) => {
     if (window.confirm("Are you sure you want to delete this donor?")) {
@@ -734,7 +745,7 @@ export default function OrganizationDashboard() {
       medium: "bg-yellow-100 text-yellow-800",
       high: "bg-red-100 text-red-800",
       approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800"
+      rejected: "bg-red-100 text-red-800",
     };
 
     return (
