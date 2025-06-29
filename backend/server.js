@@ -11,6 +11,7 @@ import foodDonationRoute from "./routes/foodDonationRoutes.js";
 import wasteFoodCollectionRoute from "./routes/wasteFoodCollectionRoutes.js"
 import vendorFoodDonationRoute from "./routes/vendorFoodDonationRoutes.js"
 import contactRoutes from "./routes/contactRoutes.js"
+import restaurantRoutes from "./routes/restaurantRoutes.js"
 
 dotenv.config({ path: "./config.env" });
 
@@ -19,8 +20,7 @@ const app = express();
 // 1. Enable CORS
 app.use(
   cors({
-    origin:
-      "https://food-donation-gamma.vercel.app",
+    origin: "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -47,6 +47,8 @@ app.use("/api/v1/dashboard/foodDonation", foodDonationRoute);
 app.use("/api/v1/dashboard/wastFoodCollection", wasteFoodCollectionRoute); 
 app.use("/api/v1/dashboard/vendorFoodDonation", vendorFoodDonationRoute); 
 app.use("/api/v1/dashboard/contact", contactRoutes); 
+app.use("/api/v1/restaurant", restaurantRoutes);
+
 
 // Error handling
 app.use(globalErrorHandler);

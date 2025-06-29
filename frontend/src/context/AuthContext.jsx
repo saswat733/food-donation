@@ -38,7 +38,8 @@ export function AuthProvider({ children }) {
 
       if (token) {
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        const { data } = await api.get("/auth/me");
+        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`, {});
+        // console.log("data:", data)
         setUser(data.data.user);
         // console.log("organization", data.data.user)
         setUserData(data.user); // Store the complete user data

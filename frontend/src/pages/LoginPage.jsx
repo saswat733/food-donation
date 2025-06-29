@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,6 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -24,9 +23,23 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(formData.email, formData.password);
+      // Make API call directly
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/login`,
+        {
+          email: formData.email,
+          password: formData.password,
+        }
+      );
+
+      // Store token in localStorage
+      localStorage.setItem("token", response.data.token);
+
+      // Store user data if needed
+      localStorage.setItem("user", JSON.stringify(response.data.data.user));
+
       toast.success("Login successful");
-      navigate("/dashboard"); // Redirect to dashboard after successful login
+      navigate(`/${response.data.data.user.role}-dashboard`); // Redirect to dashboard after successful login
     } catch (err) {
       const errorMessage =
         err.response?.data?.message || "Login failed. Please try again.";

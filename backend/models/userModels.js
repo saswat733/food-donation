@@ -83,4 +83,12 @@ const Restaurant = User.discriminator(
   })
 );
 
+// Add this method to your userSchema
+userSchema.methods.correctPassword = async function(
+  candidatePassword,
+  userPassword
+) {
+  return await bcrypt.compare(candidatePassword, userPassword);
+};
+
 export { User, Individual, Organization, Restaurant };

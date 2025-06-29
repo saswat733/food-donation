@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuthUser } from '../utils/hooks/useAuth'; // Adjust the import based on your file structure
+// import { useAuthUser } from '../utils/hooks/useAuth'; // Adjust the import based on your file structure
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,7 +9,7 @@ const VITE_API = import.meta.env.VITE_API_URL || "https://food-donation-7xzo.onr
 
 
 const DonationPage = () => {
-  const { user } = useAuthUser(); // Get the user info from the hook
+  // const { user } = useAuthUser(); // Get the user info from the hook
   const [formData, setFormData] = useState({
     donorName: '',
     contactNumber: '',

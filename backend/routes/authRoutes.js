@@ -4,6 +4,7 @@ import {
   login,
   getMe,
   logout,
+  updateMe,
 } from "../controllers/authController.js";
 import {
   validateRegistration,
@@ -34,6 +35,8 @@ router.post(
   validateLogin, // Add login validation
   login
 );
+
+router.patch("/update", protect, updateMe);
 
 // Protected routes (require authentication)
 router.get(

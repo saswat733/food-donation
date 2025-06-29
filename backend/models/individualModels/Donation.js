@@ -1,51 +1,51 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose"
 
 const donationSchema = new mongoose.Schema(
   {
     donor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // required: true,
     },
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "User", // Changed from "Organization" to "User" since both are in User model
       // required: true,
     },
     foodType: {
       type: String,
       enum: ["perishable", "non-perishable", "prepared", "other"],
-      // required: true,
+      required: true, // Uncommented required
     },
     foodDescription: {
       type: String,
-      // required: true,
+      required: true, // Uncommented required
     },
     quantity: {
       value: {
         type: Number,
-        // required: true,
+        required: true, // Uncommented required
       },
       unit: {
         type: String,
         enum: ["kg", "lbs", "units", "meals"],
-        // required: true,
+        required: true, // Uncommented required
       },
     },
     storageRequirements: {
       type: String,
       enum: ["refrigerated", "frozen", "shelf-stable", "none"],
-      // required: true,
+      required: true, // Uncommented required
     },
     preferredDeliveryDate: {
       type: Date,
-      // required: true,
+      required: true, // Uncommented required
     },
     purpose: {
       type: String,
-      // required: true,
+      required: true, // Uncommented required
     },
-    message: String,
+    specialInstructions: String,
     status: {
       type: String,
       enum: ["pending", "approved", "scheduled", "delivered", "cancelled"],
@@ -64,14 +64,17 @@ const donationSchema = new mongoose.Schema(
       postalCode: String,
       country: String,
     },
-    specialInstructions: String,
-    images: [String], // URLs to images of the food donation
+    applicationSource: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "OrgDonation", 
+    },
+    images: [String],
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt fields automatically
+    timestamps: true,
   }
 );
 
-const Donation = mongoose.model("Donation", donationSchema);
 
-export default Donation
+const Donation = mongoose.model("Donation", donationSchema);
+export default Donation;

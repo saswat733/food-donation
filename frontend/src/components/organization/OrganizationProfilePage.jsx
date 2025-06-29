@@ -2,70 +2,37 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import orgProfileService from "../../service/OrganizationProfileApis";
 import { toast } from "react-toastify";
-
-
-const dummyProfileData = {
-  orgName: "Food For All Foundation",
-  email: "contact@foodforall.org",
-  phone: "+1 (555) 123-4567",
-  address: "123 Charity Street",
-  city: "New York",
-  state: "NY",
-  zipCode: "10001",
-  country: "United States",
-  website: "www.foodforall.org",
-  description:
-    "Food For All is a non-profit organization dedicated to reducing hunger and food waste in our community. We collect surplus food from restaurants, supermarkets, and individuals, then distribute it to those in need through our network of shelters and community centers.",
-  logo: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-  taxId: "12-3456789",
-  registrationNumber: "NGO-987654",
-  foundingDate: "2015-06-15",
-  focusAreas: [
-    "Hunger Relief",
-    "Food Waste Reduction",
-    "Community Development",
-    "Nutrition Education",
-  ],
-  teamSize: "15 full-time, 50+ volunteers",
-  operatingHours: "Monday-Friday: 9AM-6PM, Weekends: 10AM-4PM",
-  socialMedia: {
-    facebook: "foodforall",
-    twitter: "foodforall_org",
-    instagram: "foodforall.foundation",
-    linkedin: "food-for-all-foundation",
-  },
-};
+import axios from "axios";
 
 export default function OrganizationProfile() {
   const { userData, fetchUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [profile, setProfile] = useState(dummyProfileData);
-//   const [profile, setProfile] = useState({
-//     orgName: "",
-//     email: "",
-//     phone: "",
-//     address: "",
-//     city: "",
-//     state: "",
-//     zipCode: "",
-//     country: "",
-//     website: "",
-//     description: "",
-//     logo: "",
-//     taxId: "",
-//     registrationNumber: "",
-//     foundingDate: "",
-//     focusAreas: [],
-//     teamSize: "",
-//     operatingHours: "",
-//     socialMedia: {
-//       facebook: "",
-//       twitter: "",
-//       instagram: "",
-//       linkedin: "",
-//     },
-//   });
+  const [profile, setProfile] = useState({
+    orgName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+    website: "",
+    description: "",
+    logo: "",
+    taxId: "",
+    registrationNumber: "",
+    foundingDate: "",
+    focusAreas: [],
+    teamSize: "",
+    operatingHours: "",
+    socialMedia: {
+      facebook: "",
+      twitter: "",
+      instagram: "",
+      linkedin: "",
+    },
+  });
   const [newFocusArea, setNewFocusArea] = useState("");
 
   useEffect(() => {
@@ -75,8 +42,40 @@ export default function OrganizationProfile() {
 
   const fetchProfileData = async () => {
     try {
-    //   const response = await orgProfileService.getProfile();
-    //   setProfile(response.data.data);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`,{
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+      console.log(response)
+      const apiData = response.data.data.user;
+
+      // Map the API data to your profile state structure
+      setProfile({
+        orgName: apiData.orgName || "",
+        email: apiData.email || "",
+        phone: apiData.phone || "",
+        address: apiData.address || "",
+        city: apiData.city || "",
+        state: apiData.state || "",
+        zipCode: apiData.zipCode || "",
+        country: apiData.country || "",
+        website: apiData.website || "",
+        description: apiData.description || "",
+        logo: apiData.logo || "",
+        taxId: apiData.taxId || "",
+        registrationNumber: apiData.registrationNumber || "",
+        foundingDate: apiData.foundingDate || "",
+        focusAreas: apiData.focusAreas || [],
+        teamSize: apiData.teamSize || "",
+        operatingHours: apiData.operatingHours || "",
+        socialMedia: {
+          facebook: apiData.socialMedia?.facebook || "",
+          twitter: apiData.socialMedia?.twitter || "",
+          instagram: apiData.socialMedia?.instagram || "",
+          linkedin: apiData.socialMedia?.linkedin || "",
+        },
+      });
       setLoading(false);
     } catch (err) {
       console.error("Error fetching profile data:", err);
@@ -124,10 +123,32 @@ export default function OrganizationProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await orgProfileService.updateProfile(profile);
+      // Prepare the data to match your API's expected format
+      const updateData = {
+        orgName: profile.orgName,
+        email: profile.email,
+        phone: profile.phone,
+        address: profile.address,
+        city: profile.city,
+        state: profile.state,
+        zipCode: profile.zipCode,
+        country: profile.country,
+        website: profile.website,
+        description: profile.description,
+        taxId: profile.taxId,
+        registrationNumber: profile.registrationNumber,
+        foundingDate: profile.foundingDate,
+        focusAreas: profile.focusAreas,
+        teamSize: profile.teamSize,
+        operatingHours: profile.operatingHours,
+        socialMedia: profile.socialMedia,
+      };
+
+      await orgProfileService.updateProfile(updateData);
       toast.success("Profile updated successfully");
       setEditing(false);
       fetchUserData(); // Refresh user data in context
+      fetchProfileData(); // Refresh profile data
     } catch (err) {
       console.error("Error updating profile:", err);
       toast.error("Failed to update profile");
@@ -163,7 +184,7 @@ export default function OrganizationProfile() {
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar and Main Content Layout */}
       <div className="flex">
-        {/* Sidebar - Same as in Dashboard */}
+        {/* Sidebar */}
         <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
           <div className="flex-1 flex flex-col min-h-0 bg-indigo-700">
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
@@ -172,7 +193,7 @@ export default function OrganizationProfile() {
               </div>
               <nav className="mt-5 flex-1 px-2 space-y-1">
                 <a
-                  href="/dashboard"
+                  href="/organization-dashboard"
                   className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
                 >
                   <svg
@@ -211,79 +232,20 @@ export default function OrganizationProfile() {
                   </svg>
                   Profile
                 </a>
-                <a
-                  href="#"
-                  className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-                >
-                  <svg
-                    className="mr-3 h-6 w-6 text-indigo-300"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                  Donations
-                </a>
-                <a
-                  href="#"
-                  className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-                >
-                  <svg
-                    className="mr-3 h-6 w-6 text-indigo-300"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                  Volunteers
-                </a>
-                <a
-                  href="#"
-                  className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-                >
-                  <svg
-                    className="mr-3 h-6 w-6 text-indigo-300"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                    />
-                  </svg>
-                  Inventory
-                </a>
+                {/* Other sidebar links */}
               </nav>
             </div>
             <div className="flex-shrink-0 flex border-t border-indigo-800 p-4">
               <div className="flex items-center">
                 <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                  {userData?.orgName
+                  {profile.orgName
                     ?.split(" ")
                     .map((n) => n[0])
                     .join("") || "O"}
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-white">
-                    {userData?.orgName || "Organization"}
+                    {profile.orgName || "Organization"}
                   </p>
                   <p className="text-xs font-medium text-indigo-200">
                     View profile
@@ -362,7 +324,7 @@ export default function OrganizationProfile() {
                     <div className="flex items-end justify-between">
                       <div className="flex items-center">
                         <div className="relative">
-                          {profile?.logo ? (
+                          {profile.logo ? (
                             <img
                               className="h-24 w-24 rounded-full border-4 border-white bg-white"
                               src={profile.logo}

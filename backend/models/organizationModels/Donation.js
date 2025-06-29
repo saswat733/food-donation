@@ -12,15 +12,15 @@ const DonationSchema = new mongoose.Schema({
   },
   foodType: {
     type: String,
-    required: true,
+    // required: true,
   },
   quantity: {
     type: Number,
-    required: true,
+    // required: true,
   },
   expirationDate: {
     type: Date,
-    required: true,
+    // required: true,
   },
   storageRequirements: {
     type: String,
@@ -37,5 +37,5 @@ const DonationSchema = new mongoose.Schema({
 });
 
 delete mongoose.models.Donation;
-const Donation = mongoose.model("Donation", DonationSchema);
-export default Donation
+const OrgDonation = mongoose.model("OrgDonation", DonationSchema);
+export default OrgDonation;

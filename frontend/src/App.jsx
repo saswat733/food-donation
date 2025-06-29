@@ -5,6 +5,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import "./App.css";
+import "leaflet/dist/leaflet.css";
 import Header from "./components/Header.jsx";
 import Home from "./pages/Home.jsx";
 import Footer from "./components/footer.jsx";
@@ -28,6 +29,12 @@ import DonatePage from "./pages/Donations.jsx";
 import WasteCollectionForm from "./pages/WasteCollectionForm.jsx";
 import FoodDonationPage from "./pages/Donations.jsx";
 import FoodVendorPage from "./pages/FoodVendor.jsx";
+import DonationsPage from "./components/organization/OrganizationDonationPage.jsx";
+import VolunteersPage from "./components/organization/Volunteers.jsx";
+import RestaurantDashboard from "./pages/RestaurantDashboard.jsx";
+import RestaurantProfile from "./pages/RestaurantProfile.jsx";
+import OrganizationPage from "./components/individual/OrganizationPage.jsx";
+import ProfilePage from "./components/individual/ProfilePage.jsx";
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -48,7 +55,9 @@ const Layout = ({ children }) => {
       "/organization-dashboard",
       "/individual-dashboard",
       "/organization-dashboard/", 
-      "/individual-dashboard/", 
+      "/individual-dashboard/",
+      "/restaurant-dashboard", 
+      "/restaurant-dashboard/",
     ];
 
     const isDashboardPath = dashboardPaths.some((path) =>
@@ -95,7 +104,10 @@ function App() {
                 <Route path="/about-us" element={<AboutUs />} />
                 <Route path="/contact" element={<ContactUs />} />
                 <Route path="/donate" element={<FoodDonationPage />} />
-                <Route path="/waste-collection-form" element={<WasteCollectionForm />} />
+                <Route
+                  path="/waste-collection-form"
+                  element={<WasteCollectionForm />}
+                />
                 <Route path="/food-vendor-form" element={<FoodVendorPage />} />
                 <Route path="/volunteer" element={<VolunteerForm />} />
                 <Route path="/login" element={<Login />} />
@@ -112,9 +124,35 @@ function App() {
                   element={<DonorsPage />}
                 />
                 <Route
+                  path="organization-dashboard/donations"
+                  element={<DonationsPage />}
+                />
+                <Route
+                  path="organization-dashboard/volunteers"
+                  element={<VolunteersPage />}
+                />
+                <Route
                   path="/individual-dashboard"
                   element={<UserDashboard />}
                 />
+                <Route
+                  path="/individual-dashboard/organizations"
+                  element={<OrganizationPage />}
+                />
+                <Route
+                  path="/individual-dashboard/profile"
+                  element={<ProfilePage />}
+                />
+
+                <Route
+                  path="/restaurant-dashboard"
+                  element={<RestaurantDashboard />}
+                />
+                <Route
+                  path="/restaurant-dashboard/profile"
+                  element={<RestaurantProfile />}
+                />
+
               </Routes>
             </Layout>
           </AuthProvider>

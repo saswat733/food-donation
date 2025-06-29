@@ -2,16 +2,30 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import orgDashboardService from "../service/OrganizationDashboardApi";
 import { toast } from "react-toastify";
-import { Link } from "react-router-dom";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function OrganizationDashboard() {
+  const { userData, fetchUserData } = useAuth();
+  const navigate = useNavigate();
+  // Modal states
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const { userData, fetchUserData } = useAuth();
+  const [showDonorModal, setShowDonorModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showIncomingDonationModal, setShowIncomingDonationModal] = useState(false);
+  const [incomingDonations, setIncomingDonations] = useState([]);
+  // Selected items for processing
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [selectedIncomingDonation, setSelectedIncomingDonation] = useState(null);
   
+  // Status states
+  const [applicationStatus, setApplicationStatus] = useState("approved");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [incomingDonationStatus, setIncomingDonationStatus] = useState("pending");
 
   // Data states
   const [donations, setDonations] = useState([]);
@@ -20,6 +34,7 @@ export default function OrganizationDashboard() {
   const [inventory, setInventory] = useState([]);
   const [requests, setRequests] = useState([]);
   const [events, setEvents] = useState([]);
+  const [applications, setApplications] = useState([]);
 
   const [loading, setLoading] = useState({
     donations: true,
@@ -28,23 +43,29 @@ export default function OrganizationDashboard() {
     inventory: true,
     requests: true,
     events: true,
+    applications: true,
+    incomingDonations: true,
   });
 
+  const user=JSON.parse(localStorage.getItem("user"))
+  // console.log("user",user)
   // Form states
   const [donationForm, setDonationForm] = useState({
-    donorId: "",
+    donor: "",
     foodType: "",
     quantity: "",
     expirationDate: "",
     storageRequirements: "",
+    status: "pending"
   });
 
   const [volunteerForm, setVolunteerForm] = useState({
     name: "",
     email: "",
     phone: "",
-    skills: "",
-    availability: "",
+    skills: [],
+    availability: "flexible",
+    // status: "active"
   });
 
   const [eventForm, setEventForm] = useState({
@@ -53,6 +74,7 @@ export default function OrganizationDashboard() {
     location: "",
     description: "",
     volunteersNeeded: "",
+    status: "upcoming"
   });
 
   const [inventoryForm, setInventoryForm] = useState({
@@ -61,7 +83,7 @@ export default function OrganizationDashboard() {
     quantity: "",
     unit: "kg",
     expiryDate: "",
-    storageLocation: "",
+    storageLocation: ""
   });
 
   const [requestForm, setRequestForm] = useState({
@@ -69,6 +91,23 @@ export default function OrganizationDashboard() {
     quantity: "",
     urgency: "medium",
     purpose: "",
+    status: "pending"
+  });
+
+  const handleLogout = () => {
+    // Remove user data from localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // Redirect to home page
+    navigate("/");
+  };
+  const [donorForm, setDonorForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: ""
   });
 
   // Stats data
@@ -85,40 +124,15 @@ export default function OrganizationDashboard() {
       change: "+0",
       changeType: "neutral",
     },
-    {
-      name: "Food Inventory",
-      value: "0 kg",
-      change: "0",
-      changeType: "neutral",
+    
+    { 
+      name: "Upcoming Events", 
+      value: "0", 
+      change: "0", 
+      changeType: "neutral" 
     },
-    { name: "Upcoming Events", value: "0", change: "0", changeType: "neutral" },
   ]);
-  useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true; // Track component mount status
-
-    const fetchData = async () => {
-      try {
-        await fetchUserData();
-        if (isMounted) {
-          await fetchDashboardData(controller.signal);
-        }
-      } catch (err) {
-        if (isMounted && !axios.isCancel(err)) {
-          console.error("Error:", err);
-          toast.error("Failed to load data");
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [fetchUserData]);
-  const fetchDashboardData = useCallback(async (signal) => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading({
         donations: true,
@@ -127,10 +141,18 @@ export default function OrganizationDashboard() {
         inventory: true,
         requests: true,
         events: true,
+        applications: true,
+        incomingDonations: true,
       });
-
-      console.log("hello")
-
+  
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+  
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  
       const [
         donationsRes,
         donorsRes,
@@ -139,207 +161,557 @@ export default function OrganizationDashboard() {
         requestsRes,
         eventsRes,
         statsRes,
+        applicationsRes,
+        incomingDonationsRes,
       ] = await Promise.all([
-        orgDashboardService.getDonations(signal),
-        orgDashboardService.getDonors(signal),
-        orgDashboardService.getVolunteers(signal),
-        orgDashboardService.getInventory(signal),
-        orgDashboardService.getRequests(signal),
-        orgDashboardService.getEvents(signal),
-        orgDashboardService.getStats(signal),
+        fetch(`${baseUrl}/org/donations`, { headers }).then((res) =>
+          res.json()
+        ),
+        fetch(`${baseUrl}/org/donors`, { headers }).then((res) => res.json()),
+        fetch(`${baseUrl}/org/volunteers`, { headers }).then((res) =>
+          res.json()
+        ),
+        fetch(`${baseUrl}/org/inventory`, { headers }).then((res) =>
+          res.json()
+        ),
+        fetch(`${baseUrl}/org/requests`, { headers }).then((res) => res.json()),
+        fetch(`${baseUrl}/org/events`, { headers }).then((res) => res.json()),
+        fetch(`${baseUrl}/org/stats`, { headers }).then((res) => res.json()),
+        fetch(`${baseUrl}/org/volunteer-applications`, { headers }).then(
+          (res) => res.json()
+        ),
+        fetch(`${baseUrl}/org/incoming-donations`, { headers }).then((res) =>
+          res.json()
+        ),
       ]);
+  
+      setDonations(
+        donationsRes.data.donations.map((d) => ({
+          ...d,
+          date: new Date(d.date).toLocaleDateString(),
+          expirationDate: new Date(d.expirationDate).toLocaleDateString(),
+        }))
+      );
+  
+      setDonors(donorsRes.data.donors);
 
-      console.log("donations:",donationsRes)
+      console.log("donors::",donors)
+      setVolunteers(volunteersRes.data.volunteers);
+      setInventory(
+        inventoryRes.data.inventory.map((i) => ({
+          ...i,
+          expiryDate: new Date(i.expiryDate).toLocaleDateString(),
+        }))
+      );
+      setRequests(requestsRes.data.requests);
+      setEvents(
+        eventsRes.data.events.map((e) => ({
+          ...e,
+          date: new Date(e.date).toLocaleDateString(),
+        }))
+      );
 
-      // Only update state if component is still mounted and request wasn't aborted
-      if (!signal.aborted) {
-        setDonations(
-          donationsRes.data.data.donations.map((d) => ({
-            ...d,
-            date: new Date(d.date).toLocaleDateString(),
-            expirationDate: new Date(d.expirationDate).toLocaleDateString(),
-          }))
-        );
-
-
-
-        setDonors(donorsRes.data.data.donors);
-        setVolunteers(volunteersRes.data.data.volunteers);
-        setInventory(
-          inventoryRes.data.data.inventory.map((i) => ({
-            ...i,
-            expiryDate: new Date(i.expiryDate).toLocaleDateString(),
-          }))
-        );
-        setRequests(requestsRes.data.data.requests);
-        setEvents(
-          eventsRes.data.data.events.map((e) => ({
-            ...e,
-            date: new Date(e.date).toLocaleDateString(),
-          }))
-        );
-
-        setStats([
-          {
-            name: "Total Donations",
-            value: `${statsRes.data.data.totalDonations}`,
-            change: statsRes.data.data.donationChange,
-            changeType: statsRes.data.data.donationChange.startsWith("+")
-              ? "positive"
-              : "negative",
-          },
-          {
-            name: "Active Volunteers",
-            value: `${statsRes.data.data.activeVolunteers}`,
-            change: statsRes.data.data.volunteerChange,
-            changeType: statsRes.data.data.volunteerChange.startsWith("+")
-              ? "positive"
-              : "negative",
-          },
-          {
-            name: "Food Inventory",
-            value: `${statsRes.data.data.totalInventory} kg`,
-            change: statsRes.data.data.inventoryChange,
-            changeType: statsRes.data.data.inventoryChange.startsWith("+")
-              ? "positive"
-              : "negative",
-          },
-          {
-            name: "Upcoming Events",
-            value: `${statsRes.data.data.upcomingEvents}`,
-            change: statsRes.data.data.eventChange,
-            changeType: statsRes.data.data.eventChange.startsWith("+")
-              ? "positive"
-              : "negative",
-          },
-        ]);
-
-        setLoading({
-          donations: false,
-          donors: false,
-          volunteers: false,
-          inventory: false,
-          requests: false,
-          events: false,
-        });
-      }
+      console.log("stats:",statsRes)
+      setStats([
+        {
+          name: "Total Donations",
+          value: `${statsRes?.data?.stats?.totalDonations ?? 0}`,
+          change: statsRes?.data?.stats?.donationChange ?? "+0%",
+          changeType: statsRes?.data?.stats?.donationChange?.startsWith("+")
+            ? "positive"
+            : "negative",
+        },
+        {
+          name: "Active Volunteers",
+          value: `${statsRes?.data?.stats?.activeVolunteers ?? 0}`,
+          change: statsRes?.data?.stats?.volunteerChange ?? "+0%",
+          changeType: statsRes?.data?.stats?.volunteerChange?.startsWith("+")
+            ? "positive"
+            : "negative",
+        },
+       
+        {
+          name: "Upcoming Events",
+          value: `${statsRes?.data?.stats?.upcomingEvents ?? 0}`,
+          change: statsRes?.data?.stats?.eventChange ?? "+0%",
+          changeType: statsRes?.data?.stats?.eventChange?.startsWith("+")
+            ? "positive"
+            : "negative",
+        },
+      ]);
+      setApplications(applicationsRes.data.applications);
+      setIncomingDonations(incomingDonationsRes.data.donations || []);
+      setLoading({
+        donations: false,
+        donors: false,
+        volunteers: false,
+        inventory: false,
+        requests: false,
+        events: false,
+        applications: false,
+        incomingDonations: false,
+      });
     } catch (err) {
-      if (!axios.isCancel(err)) {
-        console.log("failed")
-        console.error("Error fetching dashboard data:", err);
-        toast.error("Failed to load dashboard data");
-        setLoading({
-          donations: false,
-          donors: false,
-          volunteers: false,
-          inventory: false,
-          requests: false,
-          events: false,
-        });
-      }
+      console.error("Error fetching dashboard data:", err);
+      toast.error("Failed to load dashboard data");
+      setLoading({
+        donations: false,
+        donors: false,
+        volunteers: false,
+        inventory: false,
+        requests: false,
+        events: false,
+        applications: false,
+        incomingDonations: false,
+      });
     }
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true;
 
+  useEffect(() => {
+    let isMounted = true;
+  
     const loadData = async () => {
       try {
-        // First fetch user data
         await fetchUserData();
-
-        // Then fetch dashboard data if component is still mounted
         if (isMounted) {
-          await fetchDashboardData(controller.signal);
+          await fetchDashboardData();
         }
       } catch (err) {
-        if (isMounted && !axios.isCancel(err)) {
+        if (isMounted) {
           console.error("Error:", err);
           toast.error("Failed to load data");
         }
       }
     };
-
+  
+    
     loadData();
-
+  
     return () => {
       isMounted = false;
-      controller.abort();
     };
   }, [fetchUserData, fetchDashboardData]);
 
-  // Update your form handlers to use the abort controller
+  // Application handlers
+  const handleApplicationStatusUpdate = async () => {
+    try {
+      await orgDashboardService.updateApplicationStatus(
+        selectedApplication._id,
+        applicationStatus,
+        rejectionReason
+      );
+      toast.success("Application status updated successfully");
+      setShowApplicationModal(false);
+      setSelectedApplication(null);
+      setApplicationStatus("approved");
+      setRejectionReason("");
+      fetchDashboardData();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update application status"
+      );
+    }
+  };
+
+  const processApplication = (application) => {
+    setSelectedApplication(application);
+    setShowApplicationModal(true);
+  };
+
+  // Donation handlers
+  const handleIncomingDonationStatusUpdate = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/org/incoming-donations/${
+          selectedIncomingDonation._id
+        }`,
+        { status: incomingDonationStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Donation status updated successfully");
+        setShowIncomingDonationModal(false);
+        setSelectedIncomingDonation(null);
+        setIncomingDonationStatus("pending");
+
+        // Refresh the incoming donations list
+        const donationsResponse = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/org/incoming-donations`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        setIncomingDonations(donationsResponse.data.data.donations || []);
+      } else {
+        throw new Error(
+          response.data.message || "Failed to update donation status"
+        );
+      }
+    } catch (error) {
+      console.error("Error updating donation status:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update donation status"
+      );
+    }
+  };
+
+  const updateDonationStatus = (donation) => {
+    console.log("donation:", donation);
+    setSelectedIncomingDonation(donation);
+    setIncomingDonationStatus(donation.status);
+    setShowIncomingDonationModal(true);
+  };
+
   const handleDonationSubmit = async (e) => {
     e.preventDefault();
-    const controller = new AbortController();
-
-    try {
-      await orgDashboardService.recordDonation(donationForm, {
-        signal: controller.signal,
-      });
-      toast.success("Donation recorded successfully");
-      setShowDonationModal(false);
-      fetchDashboardData(new AbortController().signal);
-    } catch (err) {
-      if (!axios.isCancel(err)) {
-        console.error("Error recording donation:", err);
-        toast.error("Failed to record donation");
-      }
+    
+    // Validate required fields
+    if (!donationForm.donor || !donationForm.foodType || !donationForm.quantity || 
+        !donationForm.expirationDate || !donationForm.status) {
+      toast.error("Please fill all required fields");
+      return;
     }
-
-    return () => controller.abort();
+  
+    // Validate quantity is a positive number
+    const quantity = parseFloat(donationForm.quantity);
+    if (isNaN(quantity)) {
+      toast.error("Quantity must be a valid number");
+      return;
+    }
+    if (quantity <= 0) {
+      toast.error("Quantity must be greater than 0");
+      return;
+    }
+  
+    // Validate expiration date is in the future
+    const today = new Date();
+    const expirationDate = new Date(donationForm.expirationDate);
+    if (expirationDate <= today) {
+      toast.error("Expiration date must be in the future");
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+  
+      // Prepare the donation data
+      const donationData = {
+        donor: donationForm.donor === "anonymous" ? null : donationForm.donor,
+        foodType: donationForm.foodType,
+        quantity: quantity,
+        expirationDate: donationForm.expirationDate,
+        storageRequirements: donationForm.storageRequirements || "None specified",
+        status: donationForm.status,
+        organization: user._id
+      };
+  
+      // Make the API call
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/org/donations`,
+        donationData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000 // 10 seconds timeout
+        }
+      );
+  
+      if (!response) {
+        throw new Error(response.data.message || "Failed to record donation");
+      }
+  
+      // Show success message
+      toast.success("Donation recorded successfully");
+  
+      // Reset the form
+      setDonationForm({
+        donor: "",
+        foodType: "",
+        quantity: "",
+        expirationDate: "",
+        storageRequirements: "",
+        status: "pending"
+      });
+  
+      // Close the modal
+      setShowDonationModal(false);
+  
+      // Refresh the donations data
+      try {
+        const donationsResponse = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/org/donations`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+  
+        if (donationsResponse.data?.data?.donations) {
+          setDonations(
+            donationsResponse.data.data.donations.map(d => ({
+              ...d,
+              date: new Date(d.date).toLocaleDateString(),
+              expirationDate: new Date(d.expirationDate).toLocaleDateString(),
+            }))
+          );
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing donations:", refreshError);
+        toast.error("Donation recorded but failed to refresh list");
+      }
+  
+    } catch (err) {
+      console.error("Donation submission error:", err);
+      
+      let errorMessage = "Failed to record donation";
+      if (err.response) {
+        // Server responded with a status code outside 2xx
+        errorMessage = err.response.data?.message || 
+                      err.response.statusText || 
+                      `Server error: ${err.response.status}`;
+      } else if (err.request) {
+        // Request was made but no response received
+        errorMessage = "No response from server. Please check your connection.";
+      } else if (err.message) {
+        // Something happened in setting up the request
+        errorMessage = err.message;
+      }
+  
+      toast.error(errorMessage);
+    }
   };
 
   const handleVolunteerSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      await orgDashboardService.addVolunteer(volunteerForm);
-      toast.success("Volunteer added successfully");
-      setShowVolunteerModal(false);
-      fetchDashboardData();
+      // Validate required fields
+      if (!volunteerForm.name || !volunteerForm.email || !volunteerForm.phone) {
+        toast.error("Name, email and phone are required");
+        return;
+      }
+  
+      // Process skills string into array
+      const skillsArray = volunteerForm.skills
+        ? volunteerForm.skills.split(',').map(skill => skill.trim()).filter(skill => skill)
+        : [];
+  
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error("Authentication token not found");
+        return;
+      }
+  
+      // Prepare volunteer data
+      const volunteerData = {
+        name: volunteerForm.name,
+        email: volunteerForm.email,
+        phone: volunteerForm.phone,
+        skills: skillsArray,
+        availability: volunteerForm.availability,
+        organization: user._id, // Include organization ID
+        source: "manual" // Mark as manually added
+      };
+      console.log("volunteerData:",volunteerData)
+      // Make API call
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/org/volunteers`,
+        volunteerData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log("response:",response)
+  
+      if (response.data.success) {
+        toast.success("Volunteer added successfully");
+        
+        // Reset form
+        setVolunteerForm({
+          name: "",
+          email: "",
+          phone: "",
+          skills: "",
+          availability: "flexible"
+        });
+        
+        // Close modal
+        setShowVolunteerModal(false);
+        
+        // Refresh volunteers list
+        const volunteersResponse = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/org/volunteers`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        setVolunteers(volunteersResponse.data.data.volunteers || []);
+      } else {
+        throw new Error(response.data.message || "Failed to add volunteer");
+      }
     } catch (err) {
       console.error("Error adding volunteer:", err);
-      toast.error("Failed to add volunteer");
+      
+     
+      
+      toast.error(err);
     }
   };
 
   const handleEventSubmit = async (e) => {
     e.preventDefault();
     try {
-      await orgDashboardService.createEvent(eventForm);
+      await orgDashboardService.createEvent({
+        ...eventForm,
+        volunteersNeeded: parseInt(eventForm.volunteersNeeded),
+        organization: userData._id
+      });
       toast.success("Event created successfully");
       setShowEventModal(false);
+      setEventForm({
+        name: "",
+        date: "",
+        location: "",
+        description: "",
+        volunteersNeeded: "",
+        status: "upcoming"
+      });
       fetchDashboardData();
     } catch (err) {
       console.error("Error creating event:", err);
-      toast.error("Failed to create event");
+      toast.error(err.response?.data?.message || "Failed to create event");
+    }
+  };
+
+  const handleDonorSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (donorForm._id) {
+        await orgDashboardService.updateDonor(donorForm._id, {
+          ...donorForm,
+          organization: userData._id
+        });
+        toast.success("Donor updated successfully");
+      } else {
+        await orgDashboardService.createDonor({
+          ...donorForm,
+          organization: userData._id
+        });
+        toast.success("Donor added successfully");
+      }
+      setShowDonorModal(false);
+      setDonorForm({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        notes: ""
+      });
+      fetchDashboardData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to save donor");
     }
   };
 
   const handleInventorySubmit = async (e) => {
     e.preventDefault();
     try {
-      await orgDashboardService.updateInventory(inventoryForm);
+      await orgDashboardService.updateInventory({
+        ...inventoryForm,
+        quantity: parseFloat(inventoryForm.quantity),
+        organization: userData._id
+      });
       toast.success("Inventory updated successfully");
       setShowInventoryModal(false);
+      setInventoryForm({
+        foodItem: "",
+        category: "",
+        quantity: "",
+        unit: "kg",
+        expiryDate: "",
+        storageLocation: ""
+      });
       fetchDashboardData();
     } catch (err) {
       console.error("Error updating inventory:", err);
-      toast.error("Failed to update inventory");
+      toast.error(err.response?.data?.message || "Failed to update inventory");
     }
   };
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
     try {
-      await orgDashboardService.createRequest(requestForm);
+      await orgDashboardService.createRequest({
+        ...requestForm,
+        quantity: parseFloat(requestForm.quantity),
+        organization: userData._id
+      });
       toast.success("Request created successfully");
       setShowRequestModal(false);
+      setRequestForm({
+        itemNeeded: "",
+        quantity: "",
+        urgency: "medium",
+        purpose: "",
+        status: "pending"
+      });
       fetchDashboardData();
     } catch (err) {
       console.error("Error creating request:", err);
-      toast.error("Failed to create request");
+      toast.error(err.response?.data?.message || "Failed to create request");
+    }
+  };
+
+  // Donor management functions
+  const editDonor = (donor) => {
+    setDonorForm({
+      _id: donor._id,
+      name: donor.name,
+      email: donor.email,
+      phone: donor.phone,
+      address: donor.address,
+      notes: donor.notes || ""
+    });
+    setShowDonorModal(true);
+  };
+  
+
+  const deleteDonor = async (id) => {
+    if (window.confirm("Are you sure you want to delete this donor?")) {
+      try {
+        await orgDashboardService.deleteDonor(id);
+        toast.success("Donor deleted successfully");
+        fetchDashboardData();
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to delete donor");
+      }
     }
   };
 
@@ -347,12 +719,22 @@ export default function OrganizationDashboard() {
   const StatusBadge = ({ status }) => {
     const statusClasses = {
       pending: "bg-yellow-100 text-yellow-800",
-      completed: "bg-green-100 text-green-800",
+      received: "bg-blue-100 text-blue-800",
+      distributed: "bg-green-100 text-green-800",
       expired: "bg-red-100 text-red-800",
-      active: "bg-blue-100 text-blue-800",
-      urgent: "bg-red-100 text-red-800",
-      medium: "bg-yellow-100 text-yellow-800",
+      active: "bg-green-100 text-green-800",
+      inactive: "bg-gray-100 text-gray-800",
+      on_leave: "bg-purple-100 text-purple-800",
+      upcoming: "bg-blue-100 text-blue-800",
+      ongoing: "bg-yellow-100 text-yellow-800",
+      completed: "bg-green-100 text-green-800",
+      cancelled: "bg-red-100 text-red-800",
+      fulfilled: "bg-green-100 text-green-800",
       low: "bg-green-100 text-green-800",
+      medium: "bg-yellow-100 text-yellow-800",
+      high: "bg-red-100 text-red-800",
+      approved: "bg-green-100 text-green-800",
+      rejected: "bg-red-100 text-red-800"
     };
 
     return (
@@ -420,7 +802,7 @@ export default function OrganizationDashboard() {
                   Donors
                 </a>
                 <a
-                  href="#"
+                  href="organization-dashboard/donations"
                   className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
                 >
                   <svg
@@ -440,7 +822,7 @@ export default function OrganizationDashboard() {
                   Donations
                 </a>
                 <a
-                  href="#"
+                  href="organization-dashboard/volunteers"
                   className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
                 >
                   <svg
@@ -460,7 +842,7 @@ export default function OrganizationDashboard() {
                   Volunteers
                 </a>
                 <a
-                  href="#"
+                  href=""
                   className="text-indigo-100 hover:bg-indigo-600 hover:bg-opacity-75 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
                 >
                   <svg
@@ -575,7 +957,7 @@ export default function OrganizationDashboard() {
                     Organization Dashboard
                   </h1>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center space-x-4">
                   <button
                     type="button"
                     className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -595,6 +977,12 @@ export default function OrganizationDashboard() {
                         d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                       />
                     </svg>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Logout
                   </button>
                 </div>
               </div>
@@ -728,6 +1116,7 @@ export default function OrganizationDashboard() {
                   <h2 className="text-lg font-medium text-gray-900 mb-4">
                     Quick Actions
                   </h2>
+
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                     <div
                       onClick={() => setShowDonationModal(true)}
@@ -792,62 +1181,23 @@ export default function OrganizationDashboard() {
                         </div>
                       </div>
                     </div>
-
-                    <div
-                      onClick={() => setShowInventoryModal(true)}
-                      className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-                    >
-                      <div className="px-4 py-5 sm:p-6 flex items-center">
-                        <div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
-                          <svg
-                            className="h-6 w-6 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                            />
-                          </svg>
-                        </div>
-                        <div className="ml-5">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            Update Inventory
-                          </h3>
-                          <p className="mt-1 text-sm text-gray-500">
-                            Add or remove food items
-                          </p>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
                 {/* Recent Activity Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Recent Donations */}
-                  <div className="lg:col-span-2">
+                  {/* Recent Incoming Donations */}
+                  <div className="mt-8">
                     <div className="bg-white shadow rounded-lg overflow-hidden">
                       <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium leading-6 text-gray-900">
-                            Recent Donations
-                          </h3>
-                          <button
-                            onClick={() => setShowDonationModal(true)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            + New
-                          </button>
-                        </div>
+                        <h3 className="text-lg font-medium leading-6 text-gray-900">
+                          Recent Incoming Donations
+                        </h3>
                       </div>
                       <div className="bg-white overflow-hidden">
                         <ul className="divide-y divide-gray-200">
-                          {donations.slice(0, 5).map((donation) => (
+                          {incomingDonations.slice(0, 3).map((donation) => (
                             <li key={donation._id}>
                               <div className="px-4 py-4 sm:px-6">
                                 <div className="flex items-center justify-between">
@@ -863,19 +1213,30 @@ export default function OrganizationDashboard() {
                                           "Anonymous Donor"}
                                       </div>
                                       <div className="text-sm text-gray-500">
-                                        {donation.foodType} ({donation.quantity}{" "}
-                                        kg)
+                                        {donation.foodType} (
+                                        {donation.quantity?.value}{" "}
+                                        {donation.quantity?.unit})
                                       </div>
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end">
-                                    <div className="text-sm text-gray-500">
-                                      Expires: {donation.expirationDate}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      Received: {donation.date}
-                                    </div>
                                     <StatusBadge status={donation.status} />
+                                    <div className="mt-2 flex justify-between">
+                                      <div className="text-xs text-gray-500">
+                                        Requested:{" "}
+                                        {new Date(
+                                          donation.requestDate
+                                        ).toLocaleDateString()}
+                                      </div>
+                                      <button
+                                        onClick={() =>
+                                          updateDonationStatus(donation)
+                                        }
+                                        className="text-xs text-indigo-600 hover:text-indigo-900 ml-2"
+                                      >
+                                        Update Status
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -885,53 +1246,68 @@ export default function OrganizationDashboard() {
                       </div>
                       <div className="bg-gray-50 px-4 py-4 sm:px-6">
                         <div className="text-sm">
-                          <a
-                            href="#"
+                          <Link
+                            to="/organization-dashboard/donations"
                             className="font-medium text-indigo-600 hover:text-indigo-500"
                           >
-                            View all donations
-                          </a>
+                            View all incoming donations (
+                            {incomingDonations.length})
+                          </Link>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Inventory Summary */}
-                  <div>
+                  {/* Volunteer Applications */}
+                  <div className="mt-8">
                     <div className="bg-white shadow rounded-lg overflow-hidden">
                       <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium leading-6 text-gray-900">
-                            Inventory Summary
-                          </h3>
-                          <button
-                            onClick={() => setShowInventoryModal(true)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            + Update
-                          </button>
-                        </div>
+                        <h3 className="text-lg font-medium leading-6 text-gray-900">
+                          Volunteer Applications
+                        </h3>
                       </div>
                       <div className="bg-white overflow-hidden">
                         <ul className="divide-y divide-gray-200">
-                          {inventory.slice(0, 4).map((item) => (
-                            <li key={item._id}>
+                          {applications.slice(0, 2).map((application) => (
+                            <li key={application._id}>
                               <div className="px-4 py-4 sm:px-6">
                                 <div className="flex items-center justify-between">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {item.foodItem}
+                                  <div className="flex items-center">
+                                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                      <span className="text-blue-600 font-medium">
+                                        {application.user?.name?.charAt(0) ||
+                                          "A"}
+                                      </span>
+                                    </div>
+                                    <div className="ml-4">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {application.user?.name || "Applicant"}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        Skills:{" "}
+                                        {application.skills?.join(", ") ||
+                                          "N/A"}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="text-sm text-gray-500">
-                                    {item.quantity} {item.unit}
+                                  <div className="flex flex-col items-end">
+                                    <StatusBadge status={application.status} />
+                                    <div className="mt-2 flex justify-between">
+                                      <div className="text-xs text-gray-500">
+                                        Applied:{" "}
+                                        {new Date(
+                                          application.createdAt
+                                        ).toLocaleDateString()}
+                                      </div>
+                                      <button
+                                        onClick={() =>
+                                          processApplication(application)
+                                        }
+                                        className="text-xs text-indigo-600 hover:text-indigo-900 ml-2"
+                                      >
+                                        Process
+                                      </button>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="mt-1 flex justify-between">
-                                  <div className="text-xs text-gray-500">
-                                    Expires: {item.expiryDate}
-                                  </div>
-                                  <StatusBadge
-                                    status={item.quantity < 10 ? "low" : "good"}
-                                  />
                                 </div>
                               </div>
                             </li>
@@ -940,12 +1316,12 @@ export default function OrganizationDashboard() {
                       </div>
                       <div className="bg-gray-50 px-4 py-4 sm:px-6">
                         <div className="text-sm">
-                          <a
-                            href="#"
+                          <Link
+                            to="/organization-dashboard/volunteers"
                             className="font-medium text-indigo-600 hover:text-indigo-500"
                           >
-                            View full inventory
-                          </a>
+                            View all applications ({applications.length})
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -953,191 +1329,15 @@ export default function OrganizationDashboard() {
                 </div>
 
                 {/* Second Row - Volunteers and Requests */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-                  {/* Active Volunteers */}
-                  <div>
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                      <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium leading-6 text-gray-900">
-                            Active Volunteers
-                          </h3>
-                          <button
-                            onClick={() => setShowVolunteerModal(true)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            + Add
-                          </button>
-                        </div>
-                      </div>
-                      <div className="bg-white overflow-hidden">
-                        <ul className="divide-y divide-gray-200">
-                          {volunteers.slice(0, 4).map((volunteer) => (
-                            <li key={volunteer._id}>
-                              <div className="px-4 py-4 sm:px-6">
-                                <div className="flex items-center">
-                                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <span className="text-blue-600 font-medium">
-                                      {volunteer.name?.charAt(0) || "V"}
-                                    </span>
-                                  </div>
-                                  <div className="ml-4">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {volunteer.name}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      {volunteer.skills
-                                        ?.split(",")
-                                        .slice(0, 2)
-                                        .join(", ")}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="mt-2 flex justify-between">
-                                  <div className="text-xs text-gray-500">
-                                    Available: {volunteer.availability}
-                                  </div>
-                                  <StatusBadge
-                                    status={volunteer.status || "active"}
-                                  />
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-4 sm:px-6">
-                        <div className="text-sm">
-                          <a
-                            href="#"
-                            className="font-medium text-indigo-600 hover:text-indigo-500"
-                          >
-                            View all volunteers
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Pending Requests */}
-                  <div>
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                      <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium leading-6 text-gray-900">
-                            Pending Requests
-                          </h3>
-                          <button
-                            onClick={() => setShowRequestModal(true)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            + New
-                          </button>
-                        </div>
-                      </div>
-                      <div className="bg-white overflow-hidden">
-                        <ul className="divide-y divide-gray-200">
-                          {requests.slice(0, 4).map((request) => (
-                            <li key={request._id}>
-                              <div className="px-4 py-4 sm:px-6">
-                                <div className="flex items-center justify-between">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {request.itemNeeded}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {request.quantity} units
-                                  </div>
-                                </div>
-                                <div className="mt-1 flex justify-between">
-                                  <div className="text-xs text-gray-500">
-                                    {request.purpose?.substring(0, 30)}...
-                                  </div>
-                                  <StatusBadge status={request.urgency} />
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-4 sm:px-6">
-                        <div className="text-sm">
-                          <a
-                            href="#"
-                            className="font-medium text-indigo-600 hover:text-indigo-500"
-                          >
-                            View all requests
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upcoming Events */}
-                  <div>
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                      <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium leading-6 text-gray-900">
-                            Upcoming Events
-                          </h3>
-                          <button
-                            onClick={() => setShowEventModal(true)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            + Create
-                          </button>
-                        </div>
-                      </div>
-                      <div className="bg-white overflow-hidden">
-                        <ul className="divide-y divide-gray-200">
-                          {events.slice(0, 4).map((event) => (
-                            <li key={event._id}>
-                              <div className="px-4 py-4 sm:px-6">
-                                <div className="flex items-center justify-between">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {event.name}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {event.date}
-                                  </div>
-                                </div>
-                                <div className="mt-1 flex justify-between">
-                                  <div className="text-xs text-gray-500">
-                                    {event.location}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    Volunteers: {event.volunteersNeeded}
-                                  </div>
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-4 sm:px-6">
-                        <div className="text-sm">
-                          <a
-                            href="#"
-                            className="font-medium text-indigo-600 hover:text-indigo-500"
-                          >
-                            View all events
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </main>
         </div>
       </div>
-
       {/* Modals */}
-      {/* Donation Modal */}
       {showDonationModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
@@ -1150,105 +1350,190 @@ export default function OrganizationDashboard() {
             >
               &#8203;
             </span>
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Record New Donation
-                  </h3>
-                  <div className="mt-2">
-                    <form onSubmit={handleDonationSubmit}>
-                      <div className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="donorId"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Donor
-                          </label>
-                          <select
-                            id="donorId"
-                            name="donorId"
-                            value={donationForm.donorId}
-                            onChange={(e) =>
-                              setDonationForm({
-                                ...donationForm,
-                                donorId: e.target.value,
-                              })
-                            }
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                          >
-                            <option value="">Select a donor</option>
-                            {donors.map((donor) => (
-                              <option key={donor._id} value={donor._id}>
-                                {donor.name}
-                              </option>
-                            ))}
-                          </select>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg
+                      className="h-6 w-6 text-green-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Record New Donation
+                    </h3>
+                    <div className="mt-4">
+                      <form
+                        onSubmit={handleDonationSubmit}
+                        className="space-y-4"
+                      >
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <label
+                              htmlFor="donor"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Donor
+                            </label>
+
+                            <select
+                              id="donor"
+                              name="donor"
+                              value={donationForm.donor}
+                              onChange={(e) =>
+                                setDonationForm({
+                                  ...donationForm,
+                                  donor: e.target.value,
+                                })
+                              }
+                              className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                              required
+                            >
+                              <option value="">Select a donor</option>
+                              {donors.map((donor) => (
+                                <option key={donor._id} value={donor._id}>
+                                  {donor.name}
+                                </option>
+                              ))}
+                              <option value="anonymous">Anonymous Donor</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="foodType"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Food Type
+                            </label>
+                            <input
+                              type="text"
+                              name="foodType"
+                              id="foodType"
+                              value={donationForm.foodType}
+                              onChange={(e) =>
+                                setDonationForm({
+                                  ...donationForm,
+                                  foodType: e.target.value,
+                                })
+                              }
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              required
+                              placeholder="e.g. Rice, Vegetables, Fruits"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label
-                            htmlFor="foodType"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Food Type
-                          </label>
-                          <input
-                            type="text"
-                            name="foodType"
-                            id="foodType"
-                            value={donationForm.foodType}
-                            onChange={(e) =>
-                              setDonationForm({
-                                ...donationForm,
-                                foodType: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                          <div>
+                            <label
+                              htmlFor="quantity"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Quantity
+                            </label>
+                            <div className="mt-1 relative rounded-md shadow-sm">
+                              <input
+                                type="number"
+                                name="quantity"
+                                id="quantity"
+                                value={donationForm.quantity}
+                                onChange={(e) =>
+                                  setDonationForm({
+                                    ...donationForm,
+                                    quantity: e.target.value,
+                                  })
+                                }
+                                className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                                required
+                              />
+                              <div className="absolute inset-y-0 right-0 flex items-center">
+                                <label htmlFor="unit" className="sr-only">
+                                  Unit
+                                </label>
+                                <select
+                                  id="unit"
+                                  name="unit"
+                                  className="focus:ring-indigo-500 focus:border-indigo-500 h-full py-0 pl-2 pr-7 border-transparent bg-transparent text-gray-500 sm:text-sm rounded-md"
+                                  value={donationForm.unit || "kg"}
+                                  onChange={(e) =>
+                                    setDonationForm({
+                                      ...donationForm,
+                                      unit: e.target.value,
+                                    })
+                                  }
+                                >
+                                  <option value="kg">kg</option>
+                                  <option value="g">g</option>
+                                  <option value="lbs">lbs</option>
+                                  <option value="units">units</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="expirationDate"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Expiration Date
+                            </label>
+                            <input
+                              type="date"
+                              name="expirationDate"
+                              id="expirationDate"
+                              value={donationForm.expirationDate}
+                              onChange={(e) =>
+                                setDonationForm({
+                                  ...donationForm,
+                                  expirationDate: e.target.value,
+                                })
+                              }
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="status"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Status
+                            </label>
+                            <select
+                              id="status"
+                              name="status"
+                              value={donationForm.status}
+                              onChange={(e) =>
+                                setDonationForm({
+                                  ...donationForm,
+                                  status: e.target.value,
+                                })
+                              }
+                              className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                              required
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="received">Received</option>
+                              <option value="distributed">Distributed</option>
+                              <option value="expired">Expired</option>
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label
-                            htmlFor="quantity"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Quantity (kg)
-                          </label>
-                          <input
-                            type="number"
-                            name="quantity"
-                            id="quantity"
-                            value={donationForm.quantity}
-                            onChange={(e) =>
-                              setDonationForm({
-                                ...donationForm,
-                                quantity: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="expirationDate"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Expiration Date
-                          </label>
-                          <input
-                            type="date"
-                            name="expirationDate"
-                            id="expirationDate"
-                            value={donationForm.expirationDate}
-                            onChange={(e) =>
-                              setDonationForm({
-                                ...donationForm,
-                                expirationDate: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
+
                         <div>
                           <label
                             htmlFor="storageRequirements"
@@ -1256,10 +1541,10 @@ export default function OrganizationDashboard() {
                           >
                             Storage Requirements
                           </label>
-                          <input
-                            type="text"
+                          <textarea
                             name="storageRequirements"
                             id="storageRequirements"
+                            rows={3}
                             value={donationForm.storageRequirements}
                             onChange={(e) =>
                               setDonationForm({
@@ -1268,25 +1553,27 @@ export default function OrganizationDashboard() {
                               })
                             }
                             className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            placeholder="e.g. Refrigerated, Dry Storage, Frozen"
                           />
                         </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
-                        >
-                          Record Donation
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowDonationModal(false)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
+
+                        <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                          <button
+                            type="submit"
+                            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
+                          >
+                            Record Donation
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowDonationModal(false)}
+                            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1294,11 +1581,9 @@ export default function OrganizationDashboard() {
           </div>
         </div>
       )}
-
-      {/* Volunteer Modal */}
       {showVolunteerModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
@@ -1311,78 +1596,135 @@ export default function OrganizationDashboard() {
             >
               &#8203;
             </span>
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Add New Volunteer
-                  </h3>
-                  <div className="mt-2">
-                    <form onSubmit={handleVolunteerSubmit}>
-                      <div className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="name"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            name="name"
-                            id="name"
-                            value={volunteerForm.name}
-                            onChange={(e) =>
-                              setVolunteerForm({
-                                ...volunteerForm,
-                                name: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg
+                      className="h-6 w-6 text-blue-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Add New Volunteer
+                    </h3>
+                    <div className="mt-4">
+                      <form
+                        onSubmit={handleVolunteerSubmit}
+                        className="space-y-4"
+                      >
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <label
+                              htmlFor="name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Full Name
+                            </label>
+                            <input
+                              type="text"
+                              name="name"
+                              id="name"
+                              value={volunteerForm.name}
+                              onChange={(e) =>
+                                setVolunteerForm({
+                                  ...volunteerForm,
+                                  name: e.target.value,
+                                })
+                              }
+                              className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              required
+                              placeholder="John Doe"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="email"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              name="email"
+                              id="email"
+                              value={volunteerForm.email}
+                              onChange={(e) =>
+                                setVolunteerForm({
+                                  ...volunteerForm,
+                                  email: e.target.value,
+                                })
+                              }
+                              className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              required
+                              placeholder="john@example.com"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label
-                            htmlFor="email"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            name="email"
-                            id="email"
-                            value={volunteerForm.email}
-                            onChange={(e) =>
-                              setVolunteerForm({
-                                ...volunteerForm,
-                                email: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <label
+                              htmlFor="phone"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Phone Number
+                            </label>
+                            <input
+                              type="tel"
+                              name="phone"
+                              id="phone"
+                              value={volunteerForm.phone}
+                              onChange={(e) =>
+                                setVolunteerForm({
+                                  ...volunteerForm,
+                                  phone: e.target.value,
+                                })
+                              }
+                              className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              required
+                              placeholder="+1 (555) 123-4567"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="availability"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Availability
+                            </label>
+                            <select
+                              id="availability"
+                              name="availability"
+                              value={volunteerForm.availability}
+                              onChange={(e) =>
+                                setVolunteerForm({
+                                  ...volunteerForm,
+                                  availability: e.target.value,
+                                })
+                              }
+                              className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                              required
+                            >
+                              <option value="weekdays">Weekdays</option>
+                              <option value="weekends">Weekends</option>
+                              <option value="both">Both</option>
+                              <option value="flexible">Flexible</option>
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label
-                            htmlFor="phone"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Phone
-                          </label>
-                          <input
-                            type="tel"
-                            name="phone"
-                            id="phone"
-                            value={volunteerForm.phone}
-                            onChange={(e) =>
-                              setVolunteerForm({
-                                ...volunteerForm,
-                                phone: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
+
                         <div>
                           <label
                             htmlFor="skills"
@@ -1401,47 +1743,31 @@ export default function OrganizationDashboard() {
                                 skills: e.target.value,
                               })
                             }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            placeholder="e.g. Cooking, Driving, First Aid"
                           />
+                          <p className="mt-2 text-sm text-gray-500">
+                            Separate multiple skills with commas
+                          </p>
                         </div>
-                        <div>
-                          <label
-                            htmlFor="availability"
-                            className="block text-sm font-medium text-gray-700"
+
+                        <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                          <button
+                            type="submit"
+                            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                           >
-                            Availability
-                          </label>
-                          <input
-                            type="text"
-                            name="availability"
-                            id="availability"
-                            value={volunteerForm.availability}
-                            onChange={(e) =>
-                              setVolunteerForm({
-                                ...volunteerForm,
-                                availability: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
+                            Add Volunteer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowVolunteerModal(false)}
+                            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                          >
+                            Cancel
+                          </button>
                         </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
-                        >
-                          Add Volunteer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowVolunteerModal(false)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1450,154 +1776,121 @@ export default function OrganizationDashboard() {
         </div>
       )}
 
-      {/* Event Modal */}
-      {showEventModal && (
+      {showIncomingDonationModal && selectedIncomingDonation && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Modal backdrop */}
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
             >
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
-            <span
-              className="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
+
+            {/* Modal content */}
             <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
               <div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Create New Event
-                  </h3>
-                  <div className="mt-2">
-                    <form onSubmit={handleEventSubmit}>
-                      <div className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="eventName"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Event Name
-                          </label>
-                          <input
-                            type="text"
-                            name="name"
-                            id="eventName"
-                            value={eventForm.name}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                name: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="eventDate"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Date
-                          </label>
-                          <input
-                            type="date"
-                            name="date"
-                            id="eventDate"
-                            value={eventForm.date}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                date: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="location"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Location
-                          </label>
-                          <input
-                            type="text"
-                            name="location"
-                            id="location"
-                            value={eventForm.location}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                location: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="description"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Description
-                          </label>
-                          <textarea
-                            name="description"
-                            id="description"
-                            rows="3"
-                            value={eventForm.description}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                description: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          ></textarea>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="volunteersNeeded"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Volunteers Needed
-                          </label>
-                          <input
-                            type="number"
-                            name="volunteersNeeded"
-                            id="volunteersNeeded"
-                            value={eventForm.volunteersNeeded}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                volunteersNeeded: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Update Donation Status
+                </h3>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500">
+                    Donor: {selectedIncomingDonation.donor?.name || "Anonymous"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Food Type: {selectedIncomingDonation.foodType || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Quantity: {selectedIncomingDonation.quantity?.value}{" "}
+                    {selectedIncomingDonation.quantity?.unit}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Current Status:{" "}
+                    <StatusBadge status={selectedIncomingDonation.status} />
+                  </p>
+
+                  <div className="text-sm text-gray-500 mt-2">
+                    <p className="font-medium">Delivery Address:</p>
+                    <p>
+                      {selectedIncomingDonation.deliveryAddress.street || "N/A"}
+                    </p>
+                    <p>
+                      {selectedIncomingDonation.deliveryAddress.city},{" "}
+                      {selectedIncomingDonation.deliveryAddress.state}{" "}
+                      {selectedIncomingDonation.deliveryAddress.postalCode}
+                    </p>
+                    <p>{selectedIncomingDonation.deliveryAddress.country}</p>
+
+                    {/* Map Preview with link to Google Maps */}
+                    {selectedIncomingDonation.deliveryAddress.street && (
+                      <div className="mt-3">
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            `${selectedIncomingDonation.deliveryAddress.street}, ${selectedIncomingDonation.deliveryAddress.city}, ${selectedIncomingDonation.deliveryAddress.state} ${selectedIncomingDonation.deliveryAddress.postalCode}, ${selectedIncomingDonation.deliveryAddress.country}`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
                         >
-                          Create Event
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowEventModal(false)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                        >
-                          Cancel
-                        </button>
+                          <img
+                            src={`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(
+                              `${selectedIncomingDonation.deliveryAddress.street}, ${selectedIncomingDonation.deliveryAddress.city}, ${selectedIncomingDonation.deliveryAddress.state}`
+                            )}&zoom=14&size=400x200&maptype=roadmap&markers=color:red%7C${encodeURIComponent(
+                              `${selectedIncomingDonation.deliveryAddress.street}, ${selectedIncomingDonation.deliveryAddress.city}, ${selectedIncomingDonation.deliveryAddress.state}`
+                            )}&key=YOUR_GOOGLE_MAPS_API_KEY`}
+                            alt="Map location"
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                          />
+                          <p className="text-xs text-blue-500 mt-1 text-center">
+                            Click to open in Google Maps
+                          </p>
+                        </a>
                       </div>
-                    </form>
+                    )}
                   </div>
+                </div>
+
+                <div className="mt-4">
+                  <label
+                    htmlFor="status"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    New Status
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={incomingDonationStatus}
+                    onChange={(e) => setIncomingDonationStatus(e.target.value)}
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="scheduled">Scheduled for Pickup</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                </div>
+
+                <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                  <button
+                    type="button"
+                    onClick={handleIncomingDonationStatusUpdate}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
+                  >
+                    Update Status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowIncomingDonationModal(false);
+                      setSelectedIncomingDonation(null);
+                      setIncomingDonationStatus("pending");
+                    }}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
@@ -1605,319 +1898,249 @@ export default function OrganizationDashboard() {
         </div>
       )}
 
-      {/* Inventory Modal */}
-      {showInventoryModal && (
+      {showApplicationModal && selectedApplication && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Modal backdrop */}
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
             >
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
-            <span
-              className="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
+
+            {/* Modal content */}
             <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
               <div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Update Inventory
-                  </h3>
-                  <div className="mt-2">
-                    <form onSubmit={handleInventorySubmit}>
-                      <div className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="foodItem"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Food Item
-                          </label>
-                          <input
-                            type="text"
-                            name="foodItem"
-                            id="foodItem"
-                            value={inventoryForm.foodItem}
-                            onChange={(e) =>
-                              setInventoryForm({
-                                ...inventoryForm,
-                                foodItem: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="category"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Category
-                          </label>
-                          <input
-                            type="text"
-                            name="category"
-                            id="category"
-                            value={inventoryForm.category}
-                            onChange={(e) =>
-                              setInventoryForm({
-                                ...inventoryForm,
-                                category: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label
-                              htmlFor="quantity"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              Quantity
-                            </label>
-                            <input
-                              type="number"
-                              name="quantity"
-                              id="quantity"
-                              value={inventoryForm.quantity}
-                              onChange={(e) =>
-                                setInventoryForm({
-                                  ...inventoryForm,
-                                  quantity: e.target.value,
-                                })
-                              }
-                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="unit"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              Unit
-                            </label>
-                            <select
-                              id="unit"
-                              name="unit"
-                              value={inventoryForm.unit}
-                              onChange={(e) =>
-                                setInventoryForm({
-                                  ...inventoryForm,
-                                  unit: e.target.value,
-                                })
-                              }
-                              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                            >
-                              <option value="kg">kg</option>
-                              <option value="g">g</option>
-                              <option value="lbs">lbs</option>
-                              <option value="units">units</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="expiryDate"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Expiry Date
-                          </label>
-                          <input
-                            type="date"
-                            name="expiryDate"
-                            id="expiryDate"
-                            value={inventoryForm.expiryDate}
-                            onChange={(e) =>
-                              setInventoryForm({
-                                ...inventoryForm,
-                                expiryDate: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="storageLocation"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Storage Location
-                          </label>
-                          <input
-                            type="text"
-                            name="storageLocation"
-                            id="storageLocation"
-                            value={inventoryForm.storageLocation}
-                            onChange={(e) =>
-                              setInventoryForm({
-                                ...inventoryForm,
-                                storageLocation: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
-                        >
-                          Update Inventory
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowInventoryModal(false)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Process Volunteer Application
+                </h3>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500">
+                    Applicant: {selectedApplication.user?.name || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Email: {selectedApplication.user?.email || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Skills: {selectedApplication.skills?.join(", ") || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Availability: {selectedApplication.availability || "N/A"}
+                  </p>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Application Status
+                  </label>
+                  <div className="mt-1 space-y-2">
+                    <div className="flex items-center">
+                      <input
+                        id="approved"
+                        name="status"
+                        type="radio"
+                        checked={applicationStatus === "approved"}
+                        onChange={() => setApplicationStatus("approved")}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                      />
+                      <label
+                        htmlFor="approved"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
+                        Approved
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="rejected"
+                        name="status"
+                        type="radio"
+                        checked={applicationStatus === "rejected"}
+                        onChange={() => setApplicationStatus("rejected")}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                      />
+                      <label
+                        htmlFor="rejected"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
+                        Rejected
+                      </label>
+                    </div>
                   </div>
+
+                  {applicationStatus === "rejected" && (
+                    <div className="mt-2">
+                      <label
+                        htmlFor="rejectionReason"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Rejection Reason
+                      </label>
+                      <textarea
+                        id="rejectionReason"
+                        name="rejectionReason"
+                        rows="3"
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      ></textarea>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                  <button
+                    type="button"
+                    onClick={handleApplicationStatusUpdate}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
+                  >
+                    Update Status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowApplicationModal(false);
+                      setSelectedApplication(null);
+                      setApplicationStatus("approved");
+                      setRejectionReason("");
+                    }}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Request Modal */}
-      {showRequestModal && (
+      {showDonorModal && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Modal backdrop */}
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
             >
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
-            <span
-              className="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
+
+            {/* Modal content */}
             <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
               <div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Create New Request
-                  </h3>
-                  <div className="mt-2">
-                    <form onSubmit={handleRequestSubmit}>
-                      <div className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="itemNeeded"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Item Needed
-                          </label>
-                          <input
-                            type="text"
-                            name="itemNeeded"
-                            id="itemNeeded"
-                            value={requestForm.itemNeeded}
-                            onChange={(e) =>
-                              setRequestForm({
-                                ...requestForm,
-                                itemNeeded: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="quantity"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Quantity
-                          </label>
-                          <input
-                            type="number"
-                            name="quantity"
-                            id="quantity"
-                            value={requestForm.quantity}
-                            onChange={(e) =>
-                              setRequestForm({
-                                ...requestForm,
-                                quantity: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="urgency"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Urgency
-                          </label>
-                          <select
-                            id="urgency"
-                            name="urgency"
-                            value={requestForm.urgency}
-                            onChange={(e) =>
-                              setRequestForm({
-                                ...requestForm,
-                                urgency: e.target.value,
-                              })
-                            }
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                          >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="urgent">Urgent</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="purpose"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Purpose
-                          </label>
-                          <textarea
-                            name="purpose"
-                            id="purpose"
-                            rows="3"
-                            value={requestForm.purpose}
-                            onChange={(e) =>
-                              setRequestForm({
-                                ...requestForm,
-                                purpose: e.target.value,
-                              })
-                            }
-                            className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          ></textarea>
-                        </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
-                        >
-                          Create Request
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowRequestModal(false)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {donorForm._id ? "Update Donor" : "Add New Donor"}
+                </h3>
+                <form onSubmit={handleDonorSubmit}>
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        value={donorForm.name}
+                        onChange={(e) =>
+                          setDonorForm({ ...donorForm, name: e.target.value })
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value={donorForm.email}
+                        onChange={(e) =>
+                          setDonorForm({ ...donorForm, email: e.target.value })
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="phone"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Phone
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        id="phone"
+                        value={donorForm.phone}
+                        onChange={(e) =>
+                          setDonorForm({ ...donorForm, phone: e.target.value })
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="address"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Address
+                      </label>
+                      <textarea
+                        name="address"
+                        id="address"
+                        rows="3"
+                        value={donorForm.address}
+                        onChange={(e) =>
+                          setDonorForm({
+                            ...donorForm,
+                            address: e.target.value,
+                          })
+                        }
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      ></textarea>
+                    </div>
                   </div>
-                </div>
+
+                  <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                    <button
+                      type="submit"
+                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
+                    >
+                      {donorForm._id ? "Update Donor" : "Add Donor"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDonorModal(false);
+                        setDonorForm({
+                          name: "",
+                          email: "",
+                          phone: "",
+                          address: "",
+                          donationHistory: [],
+                        });
+                      }}
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

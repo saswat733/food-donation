@@ -2,44 +2,54 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import dashboardService from "../service/IndividualDashboardApi";
 import { toast } from "react-toastify";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 
+const API_URL =
+  import.meta.env.VITE_API_BASE_URL + "/individual" ||
+  "http://localhost:3000/api/v1/individual";
 // import { Organization } from "../../../backend/models/userModels";
 export default function UserDashboard() {
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [showServiceModal, setShowServiceModal] = useState(false);
-  const [showDonationRequestModal, setShowDonationRequestModal] = useState(false);
-  const { userData, fetchUserData } = useAuth();
-  // const [stats, setStats] = useState([]);
+  const [showDonationRequestModal, setShowDonationRequestModal] =
+    useState(false);
   const [donations, setDonations] = useState([]);
-  const [donationReq, setDonationReq] = useState([])
   const [donors, setDonors] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState({
-    // stats: true,
     donations: true,
     donors: true,
     organizations: true,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const [donationRequest, setDonationRequest] = useState({
     donor: "",
-    foodType: "",
+    foodType: "other",
     foodDescription: "",
-    quantity: "",
-    unit: "kg", // default unit
-    storageRequirements: "",
+    quantity: {
+      value: "",
+      unit: "kg",
+    },
+    storageRequirements: "frozen",
     preferredDeliveryDate: "",
     purpose: "",
     specialInstructions: "",
-    deliveryAddress: "",
+    deliveryAddress: {
+      street: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: "",
+    },
   });
-
-
-  // Form states
   const [volunteerForm, setVolunteerForm] = useState({
     organization: "",
-    skills: "",
+    skills: [],
+    currentSkill: "",
     availability: "",
     motivation: "",
   });
@@ -51,212 +61,198 @@ export default function UserDashboard() {
     location: "",
   });
 
- 
-
-  // Mock data
-  // const donations = [
-  //   {
-  //     id: 1,
-  //     name: "John Doe",
-  //     email: "john@example.com",
-  //     amount: 500,
-  //     date: "2023-05-15",
-  //     status: "Completed",
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Jane Smith",
-  //     email: "jane@example.com",
-  //     amount: 300,
-  //     date: "2023-05-10",
-  //     status: "Completed",
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Acme Corp",
-  //     email: "acme@example.com",
-  //     amount: 1000,
-  //     date: "2023-05-01",
-  //     status: "Pending",
-  //   },
-  // ];
-
-  // const donors = [
-  //   {
-  //     id: 1,
-  //     name: "John Doe",
-  //     email: "john@example.com",
-  //     interests: "Education, Poverty",
-  //     lastDonation: 500,
-  //     avatar: "JD",
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Jane Smith",
-  //     email: "jane@example.com",
-  //     interests: "Healthcare",
-  //     lastDonation: 300,
-  //     avatar: "JS",
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Acme Corp",
-  //     email: "acme@example.com",
-  //     interests: "All causes",
-  //     lastDonation: 1000,
-  //     avatar: "AC",
-  //   },
-  // ];
-
-  // const organizations = [
-  //   { id: 1, name: "Helping Hands", category: "Community Service", logo: "HH" },
-  //   { id: 2, name: "Green Earth", category: "Environment", logo: "GE" },
-  //   { id: 3, name: "Future Leaders", category: "Education", logo: "FL" },
-  // ];
-
   const stats = [
-    { name: 'Total Donations', value: '$1,800', change: '+12%', changeType: 'positive' },
-    { name: 'Active Volunteers', value: '24', change: '+4', changeType: 'positive' },
-    { name: 'Service Requests', value: '8', change: '-2', changeType: 'negative' },
-    { name: 'Upcoming Events', value: '3', change: '0', changeType: 'neutral' },
+    {
+      name: "Total Donations",
+      value: "$1,800",
+      change: "+12%",
+      changeType: "positive",
+    },
+    {
+      name: "Active Volunteers",
+      value: "24",
+      change: "+4",
+      changeType: "positive",
+    },
+    {
+      name: "Service Requests",
+      value: "8",
+      change: "-2",
+      changeType: "negative",
+    },
+    { name: "Upcoming Events", value: "3", change: "0", changeType: "neutral" },
   ];
 
-  useEffect(() => {
-    fetchUserData();
-    fetchDashboardData();
-  }, [fetchUserData]);
-
-
-    const fetchDashboardData = async () => {
-      try {
-        // Fetch all data in parallel
-        const [donationsRes, donorsRes, orgsRes,requestsRes] = await Promise.all([
-          // dashboardService.getDashboardStats(),
-          dashboardService.getDonations(),
-          dashboardService.getDonors(),
-          dashboardService.getOrganizations(),
-          dashboardService.getDonationRequests(),
-        ]);
-
-
-        // console.log("orga:",orgsRes.data.data.organizations); 
-
-        // setStats([
-        //   {
-        //     name: "Total Donations",
-        //     value: `$${statsRes.data.data.totalDonations}`,
-        //     change: "+12%",
-        //     changeType: "positive",
-        //   },
-        //   {
-        //     name: "Active Volunteers",
-        //     value: statsRes.data.data.activeVolunteers,
-        //     change: "+4",
-        //     changeType: "positive",
-        //   },
-        //   {
-        //     name: "Service Requests",
-        //     value: statsRes.data.data.serviceRequests,
-        //     change: "-2",
-        //     changeType: "negative",
-        //   },
-        //   {
-        //     name: "Upcoming Events",
-        //     value: statsRes.data.data.upcomingEvents,
-        //     change: "0",
-        //     changeType: "neutral",
-        //   },
-        // ]);
-
-        setDonations(donationsRes.data.data.donations);
-        setDonors(donorsRes.data.data.donors);
-        setDonationReq(requestsRes.data.data.requests);
-        // console.log("donations:",donationsRes)
-        setOrganizations(
-          orgsRes.data.data.organizations.map((org) => ({
-            id: org._id,
-            name: org.orgName,
-            category: org.category,
-            logo: org.orgName
-              .split(" ")
-              .map((n) => n[0])
-              .join(""),
-          }))
-        );
-
-        // console.log("Organizations:",organizations)
-
-        setLoading({
-          // stats: false,
-          donations: false,
-          donors: false,
-          organizations: false,
-        });
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        // Handle error (show error message)
-      }
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     };
+  };
 
+  const fetchDashboardData = async () => {
+    try {
+      const [donationsRes, donorsRes, orgsRes] = await Promise.all([
+        axios.get(`${API_URL}/donations`, getAuthHeaders()),
+        axios.get(`${API_URL}/donors`, getAuthHeaders()),
+        axios.get(`${API_URL}/organizations`, getAuthHeaders()),
+      ]);
+
+      setDonations(donationsRes.data.data.donations);
+      setDonors(donorsRes.data.data.donors);
+      setOrganizations(
+        orgsRes.data.data.organizations.map((org) => ({
+          id: org._id,
+          name: org.orgName,
+          category: org.category,
+          logo: org.orgName
+            .split(" ")
+            .map((n) => n[0])
+            .join(""),
+        }))
+      );
+
+      setLoading({
+        donations: false,
+        donors: false,
+        organizations: false,
+      });
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      toast.error("Failed to fetch dashboard data");
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const userData = JSON.parse(localStorage.getItem("user"));
+  console.log("donations::",donations)
 
   const handleVolunteerSubmit = async (e) => {
     e.preventDefault();
+
+    if (volunteerForm.skills.length === 0) {
+      toast.error("Please add at least one skill");
+      return;
+    }
+
+    if (!volunteerForm.availability) {
+      toast.error("Please select your availability");
+      return;
+    }
+
+    if (volunteerForm.motivation.length > 500) {
+      toast.error("Motivation should be 500 characters or less");
+      return;
+    }
+
     try {
-      const response = await dashboardService.submitVolunteerApplication({
-        organization: volunteerForm.organization,
-        skills: volunteerForm.skills,
-        availability: volunteerForm.availability,
-        motivation: volunteerForm.motivation,
-      });
-      console.log("Volunteer application submitted:", response);
-      toast.success("volunteer application submitted")
+      setIsSubmitting(true);
+      await axios.post(
+        `${API_URL}/volunteer`,
+        {
+          organization: volunteerForm.organization,
+          skills: volunteerForm.skills,
+          availability: volunteerForm.availability,
+          motivation: volunteerForm.motivation,
+        },
+        getAuthHeaders()
+      );
+
+      toast.success("Volunteer application submitted successfully!");
       setShowVolunteerModal(false);
-    } catch (err) {
-      console.error("Error submitting volunteer application:", err);
-      // Handle error (show error message)
+      setVolunteerForm({
+        organization: "",
+        skills: [],
+        currentSkill: "",
+        availability: "",
+        motivation: "",
+      });
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to submit volunteer application"
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleAddSkill = () => {
+    if (
+      volunteerForm.currentSkill.trim() &&
+      !volunteerForm.skills.includes(volunteerForm.currentSkill.trim())
+    ) {
+      setVolunteerForm({
+        ...volunteerForm,
+        skills: [...volunteerForm.skills, volunteerForm.currentSkill.trim()],
+        currentSkill: "",
+      });
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove) => {
+    setVolunteerForm({
+      ...volunteerForm,
+      skills: volunteerForm.skills.filter((skill) => skill !== skillToRemove),
+    });
+  };
   const handleServiceSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await dashboardService.submitServiceOffer({
-        serviceType: serviceForm.serviceType,
-        description: serviceForm.description,
-        availability: serviceForm.availability,
-        location: serviceForm.location,
-      });
-      console.log("Service offer submitted:", response);
-      // Handle success
-      toast.success("Service offer submitted")
+      await axios.post(`${API_URL}/service`, serviceForm, getAuthHeaders());
+      toast.success("Service offer submitted");
       setShowServiceModal(false);
-
     } catch (err) {
       console.error("Error submitting service offer:", err);
-      // Handle error
+      toast.error(
+        err.response?.data?.message || "Failed to submit service offer"
+      );
     }
   };
+
   const handleDonationRequestSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await dashboardService.requestFoodDonation({
-        donor: donationRequest.donor,
-        foodType: donationRequest.foodType,
-        foodDescription: donationRequest.foodDescription,
+      // Convert quantity value to number
+      const requestData = {
+        ...donationRequest,
         quantity: {
-          value: donationRequest.quantity,
-          unit: donationRequest.unit,
+          value: Number(donationRequest.quantity.value),
+          unit: donationRequest.quantity.unit,
         },
-        storageRequirements: donationRequest.storageRequirements,
-        preferredDeliveryDate: donationRequest.preferredDeliveryDate,
-        purpose: donationRequest.purpose,
-        specialInstructions: donationRequest.specialInstructions || undefined,
-        deliveryAddress: donationRequest.deliveryAddress || undefined,
-      });
+        preferredDeliveryDate: new Date(donationRequest.preferredDeliveryDate),
+      };
+
+      await axios.post(`${API_URL}/donation`, requestData, getAuthHeaders());
 
       toast.success("Food donation request submitted successfully!");
       setShowDonationRequestModal(false);
-      // Refresh data if needed
+      // Reset form
+      setDonationRequest({
+        donor: "",
+        foodType: "other",
+        foodDescription: "",
+        quantity: {
+          value: "",
+          unit: "kg",
+        },
+        storageRequirements: "frozen",
+        preferredDeliveryDate: "",
+        purpose: "",
+        specialInstructions: "",
+        deliveryAddress: {
+          street: "",
+          city: "",
+          state: "",
+          postalCode: "",
+          country: "",
+        },
+      });
       fetchDashboardData();
     } catch (err) {
       console.error("Error submitting food donation request:", err);
@@ -265,6 +261,7 @@ export default function UserDashboard() {
       );
     }
   };
+
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -386,22 +383,24 @@ export default function UserDashboard() {
               </nav>
             </div>
             <div className="flex-shrink-0 flex border-t border-indigo-800 p-4">
-              <div className="flex items-center">
-                <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                  {userData?.name
-                    ?.split(" ")
-                    .map((n) => n[0])
-                    .join("") || "U"}
+              <Link to={"/individual-dashboard/profile"}>
+                <div className="flex items-center">
+                  <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
+                    {userData?.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("") || "U"}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-white">
+                      {userData?.name || "User"}
+                    </p>
+                    <p className="text-xs font-medium text-indigo-200 group-hover:text-white">
+                      View profile
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-white">
-                    {userData?.name || "User"}
-                  </p>
-                  <p className="text-xs font-medium text-indigo-200 group-hover:text-white">
-                    View profile
-                  </p>
-                </div>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -475,7 +474,7 @@ export default function UserDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-2xl font-bold text-white">
-                          Welcome back, {userData?.name || "User"}!
+                          Welcome back, {userData.name}!
                         </h2>
                         <p className="mt-1 text-indigo-100 max-w-lg">
                           Here's what's happening with your NGO activities
@@ -695,44 +694,58 @@ export default function UserDashboard() {
                     <div className="bg-white shadow rounded-lg overflow-hidden">
                       <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
                         <h3 className="text-lg font-medium leading-6 text-gray-900">
-                          Recent Donations
+                          Recent Donations Requests
                         </h3>
                       </div>
                       <div className="bg-white overflow-hidden">
                         <ul className="divide-y divide-gray-200">
-                          {donations.map((donation) => (
-                            <li key={donation.id}>
+                          {donations?.map((donation) => (
+                            <li key={donation._id}>
                               <div className="px-4 py-4 sm:px-6">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center">
                                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
                                       <span className="text-indigo-600 font-medium">
-                                        {"s"}
+                                        {donation.donor.name
+                                          .charAt(0)
+                                          .toUpperCase()}
                                       </span>
                                     </div>
                                     <div className="ml-4">
                                       <div className="text-sm font-medium text-gray-900">
-                                        {donation.donor.email}
+                                        {donation.donor.name} (
+                                        {donation.donor.email})
                                       </div>
                                       <div className="text-sm text-gray-500">
-                                        {donation.purpose}
+                                        {donation.foodType} - {donation.purpose}
+                                      </div>
+                                      <div className="text-xs text-gray-400 mt-1">
+                                        {new Date(
+                                          donation.createdAt
+                                        ).toLocaleDateString()}
                                       </div>
                                     </div>
                                   </div>
                                   <div className="flex flex-col items-end">
                                     <div className="text-sm font-semibold text-gray-900">
-                                      ${donation.amount}
+                                      {donation.quantity.value}{" "}
+                                      {donation.quantity.unit}
                                     </div>
                                     <div className="text-xs text-gray-500">
-                                      {donation.date}
+                                      {donation.deliveryAddress.city},{" "}
+                                      {donation.deliveryAddress.state}
                                     </div>
                                     <span
                                       className={`mt-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                      ${
-                                        donation.status === "Completed"
-                                          ? "bg-green-100 text-green-800"
-                                          : "bg-yellow-100 text-yellow-800"
-                                      }`}
+                    ${
+                      donation.status === "delivered"
+                        ? "bg-green-100 text-green-800"
+                        : donation.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : donation.status === "approved"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
                                     >
                                       {donation.status}
                                     </span>
@@ -766,7 +779,7 @@ export default function UserDashboard() {
                       </div>
                       <div className="bg-white overflow-hidden">
                         <ul className="divide-y divide-gray-200">
-                          {organizations.map((org) => (
+                          {organizations.slice(0, 3).map((org) => (
                             <li key={org.id}>
                               <div className="px-4 py-4 sm:px-6">
                                 <div className="flex items-center">
@@ -788,8 +801,11 @@ export default function UserDashboard() {
                                   <button
                                     onClick={() => {
                                       setVolunteerForm({
-                                        ...volunteerForm,
                                         organization: org.id,
+                                        skills: [],
+                                        currentSkill: "",
+                                        availability: "",
+                                        motivation: "",
                                       });
                                       setShowVolunteerModal(true);
                                     }}
@@ -805,12 +821,12 @@ export default function UserDashboard() {
                       </div>
                       <div className="bg-gray-50 px-4 py-4 sm:px-6">
                         <div className="text-sm">
-                          <a
-                            href="#"
+                          <Link
+                            to="/individual-dashboard/organizations" // Assuming you're using React Router
                             className="font-medium text-indigo-600 hover:text-indigo-500"
                           >
-                            Browse all organizations
-                          </a>
+                            View all organizations →
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -824,37 +840,50 @@ export default function UserDashboard() {
 
       {/* Volunteer Application Modal */}
       {showVolunteerModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
             >
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
+
+            {/* Modal container */}
             <span
               className="hidden sm:inline-block sm:align-middle sm:h-screen"
               aria-hidden="true"
             >
               &#8203;
             </span>
+
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <h3 className="text-2xl font-bold leading-6 text-gray-900 mb-4">
                       Volunteer Application
                     </h3>
+                    {volunteerForm.organization && (
+                      <p className="text-sm text-gray-500 mb-6">
+                        Applying to:{" "}
+                        <span className="font-medium text-indigo-600">
+                          {organizations.find(
+                            (org) => org.id === volunteerForm.organization
+                          )?.name || ""}
+                        </span>
+                      </p>
+                    )}
+
                     <form onSubmit={handleVolunteerSubmit}>
+                      {/* Organization Selection */}
                       <div className="mb-4">
-                        <label
-                          htmlFor="organization"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Organization
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Organization *
                         </label>
                         <select
-                          id="organization"
+                          className="w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                           value={volunteerForm.organization}
                           onChange={(e) =>
                             setVolunteerForm({
@@ -862,7 +891,6 @@ export default function UserDashboard() {
                               organization: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                           required
                         >
                           <option value="">Select an organization</option>
@@ -874,39 +902,65 @@ export default function UserDashboard() {
                         </select>
                       </div>
 
-                      <div className="mb-4">
-                        <label
-                          htmlFor="skills"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Your Skills
+                      {/* Skills Section */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Your Skills *
                         </label>
-                        <textarea
-                          id="skills"
-                          rows={3}
-                          value={volunteerForm.skills}
-                          onChange={(e) =>
-                            setVolunteerForm({
-                              ...volunteerForm,
-                              skills: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="List your relevant skills"
-                          required
-                        />
+                        <div className="flex mb-2">
+                          <input
+                            type="text"
+                            className="flex-1 rounded-l-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            value={volunteerForm.currentSkill}
+                            onChange={(e) =>
+                              setVolunteerForm({
+                                ...volunteerForm,
+                                currentSkill: e.target.value,
+                              })
+                            }
+                            placeholder="Add a skill (e.g., Cooking)"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddSkill}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            Add
+                          </button>
+                        </div>
+
+                        {/* Selected Skills */}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {volunteerForm.skills.map((skill) => (
+                            <span
+                              key={skill}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                            >
+                              {skill}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSkill(skill)}
+                                className="ml-1.5 inline-flex items-center justify-center text-indigo-400 hover:text-indigo-600 focus:outline-none"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        {volunteerForm.skills.length === 0 && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            Please add at least one skill
+                          </p>
+                        )}
                       </div>
 
-                      <div className="mb-4">
-                        <label
-                          htmlFor="availability"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Availability
+                      {/* Availability */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Availability *
                         </label>
-                        <input
-                          type="text"
-                          id="availability"
+                        <select
+                          className="w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                           value={volunteerForm.availability}
                           onChange={(e) =>
                             setVolunteerForm({
@@ -914,22 +968,29 @@ export default function UserDashboard() {
                               availability: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="Days and times you're available"
                           required
-                        />
+                        >
+                          <option value="">Select your availability</option>
+                          <option value="weekdays">Weekdays</option>
+                          <option value="weekends">Weekends</option>
+                          <option value="both">
+                            Both weekdays and weekends
+                          </option>
+                          <option value="flexible">Flexible schedule</option>
+                        </select>
                       </div>
 
-                      <div className="mb-4">
-                        <label
-                          htmlFor="motivation"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Motivation
+                      {/* Motivation */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Motivation *
+                          <span className="ml-2 text-xs font-normal text-gray-500">
+                            ({volunteerForm.motivation.length}/500 characters)
+                          </span>
                         </label>
                         <textarea
-                          id="motivation"
-                          rows={3}
+                          rows={4}
+                          className="w-full rounded-md border border-gray-300 py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                           value={volunteerForm.motivation}
                           onChange={(e) =>
                             setVolunteerForm({
@@ -937,25 +998,34 @@ export default function UserDashboard() {
                               motivation: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          maxLength={500}
                           placeholder="Why do you want to volunteer with this organization?"
                           required
                         />
                       </div>
 
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
-                        >
-                          Submit Application
-                        </button>
+                      {/* Form Actions */}
+                      <div className="mt-8 flex justify-end space-x-3">
                         <button
                           type="button"
                           onClick={() => setShowVolunteerModal(false)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
                           Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={
+                            isSubmitting ||
+                            volunteerForm.skills.length === 0 ||
+                            !volunteerForm.availability ||
+                            !volunteerForm.organization
+                          }
+                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting
+                            ? "Submitting..."
+                            : "Submit Application"}
                         </button>
                       </div>
                     </form>
@@ -1113,27 +1183,30 @@ export default function UserDashboard() {
       )}
 
       {/* Donation Request Modal */}
-      {/* Donation Request Modal */}
       {showDonationRequestModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed z-50 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
             <div
               className="fixed inset-0 transition-opacity"
               aria-hidden="true"
             >
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
+
+            {/* Modal container */}
             <span
               className="hidden sm:inline-block sm:align-middle sm:h-screen"
               aria-hidden="true"
             >
               &#8203;
             </span>
+
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <h3 className="text-2xl font-bold leading-6 text-gray-900 mb-4">
                       Request Food Donation
                     </h3>
                     <form onSubmit={handleDonationRequestSubmit}>
@@ -1143,7 +1216,7 @@ export default function UserDashboard() {
                           htmlFor="donor"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Donor (Organization)
+                          Donor (Organization) *
                         </label>
                         <select
                           id="donor"
@@ -1172,10 +1245,9 @@ export default function UserDashboard() {
                           htmlFor="foodType"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Type of Food
+                          Type of Food *
                         </label>
-                        <input
-                          type="text"
+                        <select
                           id="foodType"
                           value={donationRequest.foodType}
                           onChange={(e) =>
@@ -1185,9 +1257,13 @@ export default function UserDashboard() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="e.g., Rice, Pasta, Fresh Vegetables"
                           required
-                        />
+                        >
+                          <option value="perishable">Perishable</option>
+                          <option value="non-perishable">Non-Perishable</option>
+                          <option value="prepared">Prepared Food</option>
+                          <option value="other">Other</option>
+                        </select>
                       </div>
 
                       {/* Food Description */}
@@ -1196,7 +1272,7 @@ export default function UserDashboard() {
                           htmlFor="foodDescription"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Food Description
+                          Food Description *
                         </label>
                         <textarea
                           id="foodDescription"
@@ -1216,23 +1292,23 @@ export default function UserDashboard() {
 
                       {/* Quantity */}
                       <div className="mb-4">
-                        <label
-                          htmlFor="quantity"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Quantity
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Quantity *
                         </label>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <input
                               type="number"
-                              id="quantity"
+                              id="quantityValue"
                               min="1"
-                              value={donationRequest.quantity}
+                              value={donationRequest.quantity.value}
                               onChange={(e) =>
                                 setDonationRequest({
                                   ...donationRequest,
-                                  quantity: e.target.value,
+                                  quantity: {
+                                    ...donationRequest.quantity,
+                                    value: e.target.value,
+                                  },
                                 })
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -1243,22 +1319,23 @@ export default function UserDashboard() {
                           <div>
                             <select
                               id="unit"
-                              value={donationRequest.unit}
+                              value={donationRequest.quantity.unit}
                               onChange={(e) =>
                                 setDonationRequest({
                                   ...donationRequest,
-                                  unit: e.target.value,
+                                  quantity: {
+                                    ...donationRequest.quantity,
+                                    unit: e.target.value,
+                                  },
                                 })
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                               required
                             >
-                              <option value="">Unit</option>
                               <option value="kg">Kilograms</option>
                               <option value="lbs">Pounds</option>
                               <option value="units">Units</option>
-                              <option value="liters">Liters</option>
-                              <option value="packets">Packets</option>
+                              <option value="meals">Meals</option>
                             </select>
                           </div>
                         </div>
@@ -1270,7 +1347,7 @@ export default function UserDashboard() {
                           htmlFor="storageRequirements"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Storage Requirements
+                          Storage Requirements *
                         </label>
                         <select
                           id="storageRequirements"
@@ -1284,13 +1361,10 @@ export default function UserDashboard() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                           required
                         >
-                          <option value="">Select storage needs</option>
                           <option value="refrigerated">Refrigerated</option>
                           <option value="frozen">Frozen</option>
-                          <option value="dry storage">Dry Storage</option>
-                          <option value="room temperature">
-                            Room Temperature
-                          </option>
+                          <option value="shelf-stable">Shelf-stable</option>
+                          <option value="none">None</option>
                         </select>
                       </div>
 
@@ -1300,7 +1374,7 @@ export default function UserDashboard() {
                           htmlFor="preferredDeliveryDate"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Preferred Delivery Date
+                          Preferred Delivery Date *
                         </label>
                         <input
                           type="date"
@@ -1324,7 +1398,7 @@ export default function UserDashboard() {
                           htmlFor="purpose"
                           className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                          Purpose
+                          Purpose *
                         </label>
                         <input
                           type="text"
@@ -1340,6 +1414,112 @@ export default function UserDashboard() {
                           placeholder="What will this food be used for?"
                           required
                         />
+                      </div>
+
+                      {/* Delivery Address */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Delivery Address *
+                        </label>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="Street"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              value={
+                                donationRequest.deliveryAddress?.street || ""
+                              }
+                              onChange={(e) =>
+                                setDonationRequest({
+                                  ...donationRequest,
+                                  deliveryAddress: {
+                                    ...donationRequest.deliveryAddress,
+                                    street: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <input
+                              type="text"
+                              placeholder="City"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              value={
+                                donationRequest.deliveryAddress?.city || ""
+                              }
+                              onChange={(e) =>
+                                setDonationRequest({
+                                  ...donationRequest,
+                                  deliveryAddress: {
+                                    ...donationRequest.deliveryAddress,
+                                    city: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                            />
+                            <input
+                              type="text"
+                              placeholder="State"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              value={
+                                donationRequest.deliveryAddress?.state || ""
+                              }
+                              onChange={(e) =>
+                                setDonationRequest({
+                                  ...donationRequest,
+                                  deliveryAddress: {
+                                    ...donationRequest.deliveryAddress,
+                                    state: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <input
+                              type="text"
+                              placeholder="Postal Code"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              value={
+                                donationRequest.deliveryAddress?.postalCode ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                setDonationRequest({
+                                  ...donationRequest,
+                                  deliveryAddress: {
+                                    ...donationRequest.deliveryAddress,
+                                    postalCode: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                            />
+                            <input
+                              type="text"
+                              placeholder="Country"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                              value={
+                                donationRequest.deliveryAddress?.country || ""
+                              }
+                              onChange={(e) =>
+                                setDonationRequest({
+                                  ...donationRequest,
+                                  deliveryAddress: {
+                                    ...donationRequest.deliveryAddress,
+                                    country: e.target.value,
+                                  },
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       {/* Special Instructions */}
@@ -1365,29 +1545,7 @@ export default function UserDashboard() {
                         />
                       </div>
 
-                      {/* Delivery Address */}
-                      <div className="mb-4">
-                        <label
-                          htmlFor="deliveryAddress"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Delivery Address (Optional)
-                        </label>
-                        <textarea
-                          id="deliveryAddress"
-                          rows={2}
-                          value={donationRequest.deliveryAddress}
-                          onChange={(e) =>
-                            setDonationRequest({
-                              ...donationRequest,
-                              deliveryAddress: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="If different from your organization's address"
-                        />
-                      </div>
-
+                      {/* Form Actions */}
                       <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
                         <button
                           type="submit"
